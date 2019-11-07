@@ -1,0 +1,77 @@
+' Gambas class file
+
+Export
+
+Public ShoulderAngle As Float = 0.0               ' current angle of the sholder we will need to calculate vertical distance
+Public ShoulderOffset As Integer = 0.0                ' this is the actual servo value +- 0-1000
+
+Public legUpperLen As Float = 73.00               ' length in mm
+Public legLowerLen As Float = 57.14               ' length in mm
+
+Public LegUpperOffset As Integer = 0              ' offet from zero of these angels
+Public LegLowerOffset As Integer = 0              ' offset from zero for these angles
+
+Public DistanceToGround As Float = 60                ' mm
+Public MaxDistanceSupported As Float = LegUpperLen + LegLowerLen 'this is max length
+Public MinDistanceSupported As Float = 3   
+Public MaxAngleAtDistanceToGround As Float = 0.0
+  '
+Public UpperAngle As Float = 35.00                ' angle of leg at top joint
+Public LowerAngle As Float = 00.00                ' we need to calculate this to keep lower foot at required distace for floor
+Public DistanceFromKneeToGround As Float = 00.00  ' calc this too
+
+Public ServoUpper As Servo
+Public ServoLower As Servo
+Public ServoShoulder As Servo
+Public ServoBroadcast As Servo
+
+
+
+Public Sub CalcLegPos()
+  ' using AAS formula for side as angles
+  Dim AngleB As Float = 0.0
+  Dim SideB As Float = 0.0
+  Dim ThirdSide As Float = 0.0
+  Dim ThirdAngle As Float = 0.0
+  Dim AngleSide As Float = 0.0
+  Dim Calc As Float = 0.0
+  
+  If DistanceToGround > MaxDistanceSupported Then DistanceToGround = MaxDistanceSupported ' limit stupid requests
+  If DistanceToGround < MinDistanceSupported Then DistanceToGround = MinDistanceSupported ' Min and Max
+  
+  ' calculate the max upper angle we can support at this height
+  Thirdside = Sqr((DistanceToGround ^ 2) + (MaxDistanceSupported ^ 2))
+  ThirdAngle = Deg(ASin((Sin(Rad(90.00)) * DistanceToGround) / MaxDistanceSupported))
+  MaxAngleAtDistanceToGround = Abs(180 - ThirdAngle + 90.00)
+  
+  If Abs(UpperAngle) > MaxAngleAtDistanceToGround Then ' make sure the upper angle will reach ground at requested height
+  
+    calc = Abs(UpperAngle) - MaxAngleAtDistanceToGround
+    
+    If UpperAngle >= 0 Then 
+      UpperAngle -= calc
+    Else
+      UpperAngle += calc
+    Endif
+  Endif
+  
+  AngleB = 180.000 - (UpperAngle + 90.000)                        ' we are always calculating for vertical distance
+  SideB = (LegUpperLen * Sin(Rad(AngleB))) / Sin(Rad(90.000))    ' now we are ready to calculate the angle needed for lower half to touch ground at required height
+  
+  DistanceFromKneeToGround = DistanceToGround - SideB
+  If DistanceFromKneeToGround > LegLowerLen Then DistanceFromKneeToGround = LegLowerLen
+  
+  LowerAngle = Deg(ASin((Sin(Rad(90.000)) * DistanceFromKneeToGround) / LegLowerLen))          ' could also be 180 minus this number for second intersection on the arc
+  
+End
+
+Public Sub MoveToPosition()
+  
+  CalcLegPos()
+  ServoUpper.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoUpper.ZeroPointOffset + (UpperAngle / 0.24), 300)
+  ServoLower.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoLower.ZeroPointOffset - (LowerAngle / 0.24), 300)
+  ServoShoulder.SERVO_MOVE_TIME_WAIT_WRITE(ServoShoulder.ZeroPointOffset - (ShoulderAngle / 0.24), 300)
+  ServoBroadcast.SERVO_MOVE_START() 
+  
+End
+

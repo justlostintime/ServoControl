@@ -1,0 +1,24 @@
+' Gambas class file
+
+'Fast
+Export
+' Gambas class file
+
+Export
+
+Public Waiting As Boolean
+Public Buffer As Byte[]
+Public TimeOut As Integer
+Public RxTime As Float
+Public TxTime As Float
+
+
+
+Public Sub _new(iWaiting As Boolean, theCmd As Byte[], tOut As Integer, Optional MsgTime As Float = Now)
+  
+  Waiting = iWaiting
+  Buffer = theCmd
+  TimeOut = tOut
+  TxTime = MsgTime
+  
+End

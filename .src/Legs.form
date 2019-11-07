@@ -1,0 +1,96 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,141,79)
+  Text = ("Leg Testing")
+  { Label1 Label
+    MoveScaled(1,1,25,5)
+    Text = ("Servos on leg")
+  }
+  { Label2 Label
+    MoveScaled(1,6,10,4)
+    Text = ("Shoulder")
+  }
+  { Label3 Label
+    MoveScaled(1,11,12,3)
+    Text = ("Upper Leg")
+  }
+  { Label4 Label
+    MoveScaled(1,16,13,4)
+    Text = ("Lower Leg")
+  }
+  { ShoulderServo ComboBox
+    MoveScaled(16,6,20,4)
+  }
+  { UpperServo ComboBox
+    MoveScaled(16,11,20,4)
+  }
+  { LowerServo ComboBox
+    MoveScaled(16,16,20,4)
+  }
+  { ForwardBackward Slider
+    MoveScaled(2,70,124,7)
+    Background = Color.TooltipBackground
+    MaxValue = 1000
+    PageStep = 1
+    Mark = True
+    Value = 500
+  }
+  { UpDown Slider
+    MoveScaled(128,1,10,77)
+    Background = Color.TooltipBackground
+    MaxValue = 1000
+    Mark = True
+    Value = 500
+  }
+  { Label5 Label
+    MoveScaled(45,2,14,4)
+    Text = ("Servo Name")
+  }
+  { SaveServoSettings Button
+    MoveScaled(76,4,16,6)
+    Text = ("Save Settings")
+  }
+  { QUITnOsAVE Button
+    MoveScaled(94,4,18,6)
+    Text = ("Quit No Save")
+  }
+  { SetShoulderOffsetAngle Slider
+    MoveScaled(2,34,123,7)
+    MinValue = -1000
+    MaxValue = 1000
+  }
+  { Label6 Label
+    MoveScaled(3,65,42,4)
+    Text = ("Move leg forward or back at fixed height")
+  }
+  { Label7 Label
+    MoveScaled(2,30,85,4)
+    Text = ("Set Shoulder Offset Angle, All Setting are + or Minus  0-1000 sero angle ticks")
+  }
+  { UpperLegOffsetAngleAdjust Slider
+    MoveScaled(2,45,123,6)
+    MinValue = -1000
+    MaxValue = 1000
+  }
+  { Label8 Label
+    MoveScaled(2,41,28,3)
+    Text = ("Set Upper Leg Offset Angle")
+  }
+  { LowerLegOffsetAngleAdjust Slider
+    MoveScaled(2,54,123,6)
+    MinValue = -1000
+    MaxValue = 1000
+  }
+  { LoadServoSettings Button
+    MoveScaled(76,11,16,6)
+    Text = ("Load Settings")
+  }
+  { Label9 Label
+    MoveScaled(2,51,31,3)
+    Text = ("Set Lower Leg offset Angle")
+  }
+  { LegName ComboBox
+    MoveScaled(45,6,25,5)
+  }
+}

@@ -1,0 +1,561 @@
+' Gambas class file
+
+'Fast
+
+Export
+
+Public Loaded As Byte = 0     ' default to not loaded this is the energization of the servo
+Public ServoId As Byte = 0    ' default to first servo in chain
+
+Public ServoTemp As Integer   ' the last read temp of the servo
+Public ServoVin As Integer    '  The last voltage level read from servo
+Public ServoPos As Integer    '  The last position the servo was at
+Public ServoState As Integer  ' the Current status or state of this servo 0=ready for command, 1 = waiting for reply, 2 = waiting to reach position
+Public IoMgr As IoManager     ' the iomanager for servos
+Public LastError As Byte      ' The last error from the led error blinky
+Private Polling As Timer = New Timer As "MyTimer"
+
+Public HomePosition As Integer = 500 ' This is the software controlled home position 0-100 or 0-240 degrees
+
+Static Public Const CmdOffset As Integer = 4   ' offset of commands in the buffer
+Static Public Const IdOffset As Integer = 2     ' Offset of the id byte
+Static Public Const LenOffset As Integer = 3    ' length of buffer
+Static Public Const Parm1 As Integer = 5       'first word command or byte command
+Static Public Const Parm2 As Integer = 7        ' second word parameter
+
+'Led error status settings
+Static Public Const NoAlarm As Integer = 0
+Static Public Const OverTemp As Integer = 1
+Static Public Const OverVoltage As Integer = 2
+Static Public Const OverTempAndOverVoltage As Integer = 3
+Static Public Const LockedRotor As Integer = 4
+Static Public Const OverTempAndStalled As Integer = 5
+Static Public Const OverTempOverVoltageAndStalled As Integer = 7
+
+Static Public Const MinServoTravel As Float = 0.24
+
+Private GetReadEvents As Boolean = False
+Private ServoIsOpen As Boolean = False
+
+Public IoTimeLastTx As Float 
+Public IoTimeLastRx As Float
+Public IoTrace As Boolean = False
+Public IoTimeOut As Integer = 40
+Public PollingTime As Integer = 500
+Public ZeroPointOffset As Integer = 0
+
+
+
+'Serial message format
+
+'0x55 0x55 ID Length Cmd Prm 1... Prm N Checksum
+'Header: Two consecutive 0 x55 are received indicating the arrival Of data packets.
+'Public CmdHeader As Byte[] = [85, 85]
+
+'ID: Each servo has an ID number.ID number ranges From 0 ~ 253, converted
+'To hexadecimal 0 x00 ~ 0xFD.
+'Broadcast ID: ID No.254(0 xFE) Is The broadcast ID.If the ID number issued
+'by the controller Is 254(0 xFE), all servos will receive instructions, but they all
+'Do Not Return the response message, (except For reading the servo ID number,
+'Please refer To the following instructions For detailed instructions) To prevent
+'bus conflict.
+'Command name: Just For easy identification, the user can also set according To
+'their own habits.Command name suffix "_WRITE" which represents Write
+'command, And the suffix "_READ" represents Read command.
+'Command value: That Is, the command Cmd In command packet Of Table 1
+'Length: that Is The length(data length) In table 1
+
+Public SERVO_MOVE_TIME_WRITE_DATA As Byte[] = [85, 85, 0, 7, 1, 0, 0, 0, 0, 0]
+
+Public SERVO_MOVE_TIME_READ_DATA As Byte[] = [85, 85, 0, 3, 2, 0]
+Public SERVO_MOVE_TIME_READ_MSG As Byte[] = [85, 85, 0, 7, 2, 0, 0, 0, 0, 0] ' this is the header of the incomming message
+
+Public SERVO_MOVE_TIME_WAIT_WRITE_DATA As Byte[] = [85, 85, 0, 7, 7, 0, 0, 0, 0, 0]
+
+Public SERVO_MOVE_TIME_WAIT_READ_DATA As Byte[] = [85, 58, 0, 3, 8, 0]
+Public SERVO_MOVE_TIME_WAIT_READ_MSG As Byte[] = [85, 85, 0, 7, 8, 0, 0, 0, 0, 0] ' this is the header of the incomming message
+
+Public SERVO_MOVE_START_DATA As Byte[] = [85, 85, 0, 3, 11, 0]
+Public SERVO_MOVE_STOP_DATA As Byte[] = [85, 85, 0, 3, 12, 0]
+
+Public SERVO_ID_WRITE_DATA As Byte[] = [85, 85, 0, 4, 13, 0, 0]
+
+Public SERVO_ID_READ_DATA As Byte[] = [85, 85, 0, 3, 14, 0]
+Public SERVO_ID_READ_MSG As Byte[] = [85, 85, 0, 4, 14]  ' this is the header of the incomming message
+
+Public SERVO_ANGLE_OFFSET_ADJUST_DATA As Byte[] = [85, 85, 0, 4, 17, 0, 0]
+
+Public SERVO_ANGLE_OFFSET_WRITE_DATA As Byte[] = [85, 85, 0, 3, 18, 0]
+
+Public SERVO_ANGLE_OFFSET_READ_DATA As Byte[] = [85, 85, 0, 3, 19, 0]
+Public SERVO_ANGLE_OFFSET_READ_MSG As Byte[] = [85, 85, 0, 4, 19, 0, 0] ' this is the header of the incomming message
+
+Public SERVO_ANGLE_LIMIT_WRITE_DATA As Byte[] = [85, 85, 0, 7, 20, 0, 0, 0, 0, 0]
+
+Public SERVO_ANGLE_LIMIT_READ_DATA As Byte[] = [85, 85, 0, 3, 21, 0]
+Public SERVO_ANGLE_LIMIT_READ_MSG As Byte[] = [85, 85, 0, 7, 21, 0, 0, 0, 0, 0]  ' this is the header of the incomming message
+
+Public SERVO_VIN_LIMIT_WRITE_DATA As Byte[] = [85, 85, 0, 7, 22, 0, 0, 0, 0, 0]
+
+Public SERVO_VIN_LIMIT_READ_DATA As Byte[] = [85, 85, 0, 3, 23, 0]
+Public SERVO_VIN_LIMIT_READ_MSG As Byte[] = [85, 85, 0, 7, 23, 0, 0, 0, 0, 0]  ' this is the header of the incomming message
+
+Public SERVO_TEMP_MAX_LIMIT_WRITE_DATA As Byte[] = [85, 85, 0, 4, 24, 0, 0]
+
+Public SERVO_TEMP_MAX_LIMIT_READ_DATA As Byte[] = [85, 85, 0, 3, 25, 0]
+Public SERVO_TEMP_MAX_LIMIT_READ_MSG As Byte[] = [85, 85, 0, 4, 25, 0, 0] ' this is the header of the incomming message
+
+Public SERVO_TEMP_READ_DATA As Byte[] = [85, 85, 0, 3, 26, 0]
+Public SERVO_TEMP_READ_MSG As Byte[] = [85, 85, 0, 4, 26, 0, 0]
+
+Public SERVO_VIN_READ_DATA As Byte[] = [85, 85, 0, 3, 27, 0]
+Public SERVO_VIN_READ_MSG As Byte[] = [85, 85, 0, 5, 27, 0, 0, 0]
+
+Public SERVO_POS_READ_DATA As Byte[] = [85, 85, 0, 3, 28, 0]
+Public SERVO_POS_READ_MSG As Byte[] = [85, 85, 0, 5, 28, 0, 0, 0]
+
+Public SERVO_OR_MOTOR_MODE_WRITE_DATA As Byte[] = [85, 85, 0, 7, 29, 0, 0, 0, 0, 0]
+
+Public SERVO_OR_MOTOR_MODE_READ_DATA As Byte[] = [85, 85, 0, 3, 30, 0]
+Public SERVO_OR_MOTOR_MODE_READ_MSG As Byte[] = [85, 85, 0, 7, 30, 0, 0, 0, 0, 0]
+
+Public SERVO_LOAD_OR_UNLOAD_WRITE_DATA As Byte[] = [85, 85, 0, 4, 31, 0, 0]
+
+Public SERVO_LOAD_OR_UNLOAD_READ_DATA As Byte[] = [85, 85, 0, 3, 32, 0]
+Public SERVO_LOAD_OR_UNLOAD_READ_MSG As Byte[] = [85, 85, 0, 4, 32, 0, 0]
+
+Public SERVO_LED_CTRL_WRITE_DATA As Byte[] = [85, 85, 0, 4, 33, 0, 0]
+
+Public SERVO_LED_CTRL_READ_DATA As Byte[] = [85, 85, 0, 3, 34, 0]
+Public SERVO_LED_CTRL_READ_MSG As Byte[] = [85, 85, 0, 4, 34, 0, 0]
+
+Public SERVO_LED_ERROR_WRITE_DATA As Byte[] = [85, 85, 0, 4, 35, 0, 0]
+
+Public SERVO_LED_ERROR_READ_DATA As Byte[] = [85, 85, 0, 3, 36, 0]
+Public SERVO_LED_ERROR_READ_MSG As Byte[] = [85, 85, 0, 4, 36, 0, 0]
+
+
+Public Sub mytimer_Timer()
+  
+  SERVO_POS_READ()
+  
+End
+
+Public Sub IoTraceSet(OnOff As Boolean)
+  
+  IoTrace = OnOff
+  
+End
+
+Public Sub _new(ID As Byte, IoPortId As IoManager)
+
+  ServoId = ID
+  IoMgr = IoPortId
+  
+  HomePosition = Settings[("Servo" & Str(ServoID) & "/Home"), 500]
+  ZeroPointOffset = Settings[("Servo" & Str(ServoID) & "/Zero"), 0]
+  
+  SERVO_LOAD_OR_UNLOAD_WRITE(0)    ' this will turn off the servo motor
+  
+End
+
+Public Sub BeginPolling()
+  
+  Polling.Delay = PollingTime      ' lets start polling this device
+  If Not (ServoId = 254) Then Polling.Enabled = True
+  
+End
+
+
+Public Sub receivedMessage(theMessage As Byte[], RxTime As Float, TxTime As Float) As Boolean
+Dim inByte As Byte
+Dim inData As String
+ 
+  IoTimeLastRx = Timer
+  
+  IoMgr.Logger("", "<-Rx Servo(" & ServoId & ")>", theMessage, ServoID)
+  
+  If TheMessage[CmdOffset] = 28 Then ServoPos = GetIntParm1(TheMessage)
+  
+  If ServoIsOpen Then 
+    Return GetReadEvents
+  Else
+    Return False
+  Endif
+  
+End
+
+
+Sub SendCommand(TheCmd As Byte[], Optional WaitReply As Boolean = False, TimeOut As Integer = 0)
+ Dim inByte As Byte
+ Dim inData As String
+ 
+  IoTimeLastTx = Timer
+  TheCmd[2] = ServoId
+  
+  IoMgr.Logger("", Str("-> Tx Servo(" & ServoId & ")>"), TheCmd, ServoId)
+
+  IoMgr.SendCommand(TheCmd, WaitReply, Timeout)
+End
+
+' 'Checksum: The calculation method Is As follows:
+' 'Checksum = ~(ID+ Length+Cmd+ Prm1+...PrmN)If the numbers in the
+' 'brackets are calculated And exceeded 255, Then take the lowest one byte, "~"
+' 'means Negation.
+' Public Sub chksum(cmdBuff As Byte[])
+' 
+' Dim cmdlen As Integer = (cmdBuff[3] - 1)
+' Dim chksumcalc As Integer = cmdBuff[2]
+' 
+'   For i As Integer = 0 To cmdlen - 1 
+'     chksumcalc += cmdBuff[3 + i]
+'   Next
+'   
+'   chksumcalc = (Not chksumcalc) And &HFF
+'   cmdBuff[cmdBuff[3] + 2] = chksumcalc
+'   
+' End
+
+Public Sub GetIntParm1(TheCmd As Byte[]) As Integer
+  
+  Return TheCmd[Parm1] + (TheCmd[Parm1 + 1] * 255) 
+  
+End
+
+Public Sub SetIntParm1(iVal As Integer, TheCmd As Byte[])
+  
+  Thecmd[Servo.Parm1] = iVal And &HFF
+  Thecmd[Servo.Parm1 + 1] = Lsr(iVal, 8) And &HFF
+  
+End
+Public Sub SetIntParm2(iVal As Integer, TheCmd As Byte[])
+  
+  Thecmd[Servo.Parm2] = iVal And &HFF
+  Thecmd[Servo.Parm2 + 1] = Lsr(iVal, 8) And &HFF
+  
+End
+
+Public Sub setTime(DG As Integer, TheCmd As Byte[], Offset As Integer)
+ 
+   Thecmd[Offset] = DG And &HFF
+   Thecmd[offset + 1] = Lsr(DG, 8) And &HFF
+  
+End
+
+
+Public Sub setDegree(Degree As Float, cmd As Byte[], Offset As Integer) As Boolean ' returns false if invalid degree not 0-240
+  Dim DG As Integer
+  If (Degree >= 0.0) Then 
+   If (degree <= 240.00) Then
+      Degree /= MinServoTravel
+      DG = Round(Degree)
+  
+      cmd[Offset] = DG And &HFF
+      cmd[offset + 1] = Lsr(DG, 8) And &HFF
+     
+      Return True
+   Endif
+  Endif
+  Return False
+End
+
+Public Sub HomePositionSet(HomeIt As Integer)
+  
+  HomePosition = Homeit
+  Settings[("Servo" & Str(ServoID)) & "/Home"] = HomePosition
+  
+End
+
+Public Sub HomeServo()
+  
+   SERVO_MOVE_TIME_WRITE_Int(HomePosition, 20)
+  
+End
+
+
+Public Sub SERVO_MOVE_TIME_WRITE(Degree As Float, timeInMs As Integer)
+
+  If setDegree(Degree, SERVO_MOVE_TIME_WRITE_DATA, Parm1) And (timeInMs <= 30000) And (TimeInMs >= 0) Then
+    
+    setTime(timeInMs, SERVO_MOVE_TIME_WRITE_DATA, Parm2)
+    
+    SendCommand(SERVO_MOVE_TIME_WRITE_DATA)
+
+  Endif
+  
+End
+Public Sub SERVO_MOVE_TIME_WRITE_INT(Degree As Integer, timeInMs As Integer)
+
+  If (Degree < 1000) And (timeInMs <= 30000) And (TimeInMs >= 0) Then
+    
+    SetIntParm1(Degree, SERVO_MOVE_TIME_WRITE_DATA)
+    setTime(timeInMs, SERVO_MOVE_TIME_WRITE_DATA, Parm2)
+    SendCommand(SERVO_MOVE_TIME_WRITE_DATA)
+
+  Endif
+  
+End
+
+Public Sub SERVO_MOVE_TIME_READ()
+  
+  SendCommand(SERVO_MOVE_TIME_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub SERVO_MOVE_TIME_WAIT_WRITE_INT(Degree As Integer, timeInMs As Integer)
+  
+  If (Degree < 1000) And (timeInMs <= 30000) And (TimeInMs >= 0) Then
+    
+    SetIntParm1(Degree, SERVO_MOVE_TIME_WAIT_WRITE_DATA)
+    setTime(timeInMs, SERVO_MOVE_TIME_WAIT_WRITE_DATA, Parm2)
+    SendCommand(SERVO_MOVE_TIME_WAIT_WRITE_DATA)
+
+  Endif
+  
+End
+
+Public Sub SERVO_MOVE_TIME_WAIT_WRITE(Degree As Float, timeInMs As Integer)
+  
+   If setDegree(Degree, SERVO_MOVE_TIME_WRITE_DATA, Parm1) And (timeInMs <= 30000) And (TimeInMs >= 0) Then
+    
+    setTime(timeInMs, SERVO_MOVE_TIME_WRITE_DATA, Parm2)
+    SendCommand(SERVO_MOVE_TIME_WRITE_DATA)
+
+  Endif
+  
+End
+
+Public Sub SERVO_MOVE_TIME_WAIT_READ()
+  
+  SendCommand(SERVO_MOVE_TIME_WAIT_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub SERVO_MOVE_START()
+  
+  SendCommand(SERVO_MOVE_START_DATA)
+  
+End
+
+Public Sub SERVO_MOVE_STOP()
+  
+  SendCommand(SERVO_MOVE_STOP_DATA)
+  
+End
+
+Public Sub SERVO_ID_WRITE(ID As Byte)
+  
+  SERVO_ID_WRITE_DATA[Servo.Parm1] = ID
+  SendCommand(SERVO_ID_WRITE_DATA)
+  ServoID = ID
+  
+End
+
+Public Sub SERVO_ID_READ()
+  
+  SendCommand(SERVO_ID_READ_DATA)
+  
+End
+
+Public Sub SERVO_ANGLE_OFFSET_ADJUST(Angle As Float)
+  Dim iAngle As Integer
+  
+  If Angle < -30 Then angle = -30
+  If Angle > 30 Then angle = 30
+  
+  iAngle = Round(Angle / MinServoTravel)
+  
+  SERVO_ANGLE_OFFSET_ADJUST_INT(iAngle)
+
+End
+Public Sub SERVO_ANGLE_OFFSET_ADJUST_INT(Angle As Integer)
+
+  If Angle < -125 Then angle = -125
+  If Angle > 125 Then Angle = 125
+  
+  SERVO_ANGLE_OFFSET_ADJUST_DATA[Parm1] = Angle
+  SendCommand(SERVO_ANGLE_OFFSET_ADJUST_DATA)
+  
+End
+
+Public Sub SERVO_ANGLE_OFFSET_WRITE() ' save angle to rom
+  
+  SendCommand(SERVO_ANGLE_OFFSET_WRITE_DATA)
+  
+End
+
+Public Sub SERVO_ANGLE_OFFSET_READ()
+  
+  SendCommand(SERVO_ANGLE_OFFSET_READ_DATA)
+  
+End
+
+Public Sub SERVO_ANGLE_LIMIT_WRITE(MinAngle As Float, MaxAngle As Float)
+  Dim iMin, iMax As Integer
+  
+  If MinAngle < 0 Then MinAngle = 0
+  If MaxAngle > 240 Then MaxAngle = 240
+  
+  iMin = Round(MinAngle / MinServoTravel)
+  iMax = Round(MaxAngle / MinServoTravel)
+  
+  SERVO_ANGLE_LIMIT_WRITE_INT(iMin, iMax)
+End
+
+Public Sub SERVO_ANGLE_LIMIT_WRITE_INT(MinAngle As Integer, MaxAngle As Integer)
+  
+  If MinAngle < 0 Then MinAngle = 0
+  If MaxAngle > 1000 Then MaxAngle = 1000
+  
+  SetIntParm1(MinAngle, SERVO_ANGLE_LIMIT_WRITE_DATA)
+  SetIntParm2(MaxAngle, SERVO_ANGLE_LIMIT_WRITE_DATA)
+  
+  SendCommand(SERVO_ANGLE_LIMIT_WRITE_DATA)
+  
+End
+
+Public Sub SERVO_ANGLE_LIMIT_READ()
+  
+  SendCommand(SERVO_ANGLE_LIMIT_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub SERVO_VIN_LIMIT_WRITE(Min As Float, max As Float)
+ Dim iMin, Imax As Integer
+  
+  If max > 12.0 Then max = 12.0 ' max voltage
+  If min < 4.5 Then min = 4.5   ' min voltage
+  
+  iMin = Int(min * 1000)
+  iMax = Int(max * 1000)
+  
+  SetIntParm1(iMin, SERVO_VIN_LIMIT_WRITE_DATA)
+  SetIntParm2(iMax, SERVO_VIN_LIMIT_WRITE_DATA)
+  
+  SendCommand(SERVO_VIN_LIMIT_WRITE_DATA)
+  
+End
+
+Public Sub SERVO_VIN_LIMIT_READ()
+  
+  SendCommand(SERVO_VIN_LIMIT_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub SERVO_TEMP_MAX_LIMIT_WRITE(MaxTemp As Byte)
+  
+  SERVO_TEMP_MAX_LIMIT_WRITE_DATA[Parm1] = MaxTemp
+  
+  SendCommand(SERVO_TEMP_MAX_LIMIT_WRITE)
+  
+End
+
+Public Sub SERVO_TEMP_MAX_LIMIT_READ()
+  
+  SendCommand(SERVO_TEMP_MAX_LIMIT_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub SERVO_TEMP_READ()
+  
+  SendCommand(SERVO_TEMP_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub SERVO_VIN_READ()
+  
+  SendCommand(SERVO_VIN_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub SERVO_POS_READ()
+  
+  SendCommand(SERVO_POS_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub SERVO_OR_MOTOR_MODE_WRITE(mode As Integer, speed As Integer)
+  SERVO_OR_MOTOR_MODE_WRITE_DATA[Parm1] = mode 
+  SetIntParm2(speed, SERVO_OR_MOTOR_MODE_WRITE_DATA)
+  SendCommand(SERVO_OR_MOTOR_MODE_WRITE_DATA)
+End
+
+Public Sub SERVO_OR_MOTOR_MODE_READ()
+  
+  SendCommand(SERVO_OR_MOTOR_MODE_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub SERVO_LOAD_OR_UNLOAD_WRITE(ModeId As Byte)
+
+  'If ModeID > 1 Or ModeId = Loaded Then Return
+ 
+  SERVO_LOAD_OR_UNLOAD_WRITE_DATA[Parm1] = ModeId
+  Loaded = ModeId
+  SendCommand(SERVO_LOAD_OR_UNLOAD_WRITE_DATA)
+
+End
+
+Public Sub SERVO_LOAD_OR_UNLOAD_READ()
+  
+    SendCommand(SERVO_LOAD_OR_UNLOAD_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub SERVO_LED_CTRL_WRITE(OnOff As Boolean)
+  
+  SERVO_LED_CTRL_WRITE_DATA[Parm1] = OnOff 
+  SendCommand(SERVO_LED_CTRL_WRITE_DATA)
+  
+End
+
+Public Sub SERVO_LED_CTRL_READ()
+  
+  SendCommand(SERVO_LED_CTRL_READ_DATA, True, IoTimeOut)
+  
+End
+
+
+
+Public Sub SERVO_LED_ERROR_WRITE(Mode As Integer)
+
+If mode < 0 Then mode = 0
+If mode > 7 Then mode = 7
+
+SERVO_LED_ERROR_WRITE_DATA[Parm1] = Mode
+SendCommand(SERVO_LED_ERROR_WRITE_DATA)
+  
+End
+
+Public Sub SERVO_LED_ERROR_READ()
+  
+  SendCommand(SERVO_LED_ERROR_READ_DATA, True, IoTimeOut)
+  
+End
+
+Public Sub OpenServo(GetReadEventsRequest As Boolean)
+  
+   GetReadEvents = GetReadEventsRequest
+   ServoIsOpen = True
+   
+  
+End
+
+Public Sub CloseServo()
+  
+  ServoIsOpen = False
+  GetReadEvents = False
+  
+End
+
+Public Sub DeleteServo()
+  
+  Settings[("Servo" & Str(ServoID) & "/Home")] = HomePosition
+  Settings[("Servo" & Str(ServoID) & "/Zero")] = ZeroPointOffset
+
+  ServoIsOpen = False
+  GetReadEvents = False
+  Polling.Enabled = False
+  IoMgr = Null
+  
+End

@@ -1,0 +1,316 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,130,81)
+  Text = ("Servo Control and management LX-16A thru BusLinker V2.2")
+  { LegTesting Menu
+    Text = ("Legs")
+    { TestingLeg Menu
+      Text = ("testing")
+    }
+  }
+  { StartServos Button
+    MoveScaled(2,2,14,4)
+    ToolTip = ("You Must Do This First to Connect to serial Port and Enumerate Servos")
+    Text = ("Start")
+  }
+  { ServoAssignmentPanel Panel
+    MoveScaled(36,2,34,11)
+    Enabled = False
+    Background = Color.LightGray
+    { DoAssign Button
+      MoveScaled(11,1,10,4)
+      Text = ("DoAssign")
+    }
+    { ServoAssignTo TextBox
+      MoveScaled(24,1,5,4)
+      Text = ("1")
+    }
+    { Label1 Label
+      MoveScaled(3,7,28,3)
+      Text = ("Change Servo ID from -> To")
+    }
+    { ServoAssignFrom TextBox
+      MoveScaled(4,1,5,4)
+      Text = ("1")
+    }
+  }
+  { !ReadOut TextArea
+    MoveScaled(77,2,48,42)
+    #Public = True
+    Font = Font["DejaVu Sans Mono"]
+    Text = ("Select \"Start\" To connect to Servo\ncontroller.\n\nBusLinker 2.2 and 2.1 are both\nsupported(ie tested)\n")
+    ReadOnly = True
+  }
+  { ListServos Button
+    MoveScaled(2,7,14,4)
+    Enabled = False
+    ToolTip = ("You Must Do this to See Servos in the Dropdown. \nIt will Load the available servos into the dropdown box, Allowing you to Manage the settings for those servos. Servo number zero is the Broacast address servo. If the manager has not completed detecting the servos when you click this then you need to do it again.")
+    Text = ("List Servos")
+  }
+  { Button2 Button
+    MoveScaled(114,69,10,4)
+    Text = ("Quit")
+  }
+  { StopAllServosNow Button
+    MoveScaled(2,12,14,4)
+    Enabled = False
+    ToolTip = ("Stop All moving servos now")
+    Text = ("Stop All Move")
+  }
+  { AccessServoPanel Panel
+    MoveScaled(2,17,72,46)
+    Enabled = False
+    { Label2 Label
+      MoveScaled(1,1,13,2)
+      Text = ("Active Servo")
+    }
+    { LoadServo Button
+      MoveScaled(16,3,11,4)
+      ToolTip = ("This will cause the servo ro remain loaded or powered on between movements. This means that the servo will hold its position between move commands.\nUnloaded the servoe will move from external force between move commands.\nIt seems that the servos will move even in unloaded mode ie. powered off\n")
+      Text = ("Load")
+    }
+    { UnLoad Button
+      MoveScaled(29,3,13,4)
+      ToolTip = ("This will power down the servo motor and allow. External inputs to move the servo.\nThe servo will still respond to move commands. Even if the document says it will not. but at the end of the move the motor will be off.\nSee unloaded to force the servo to hold position after a move.")
+      Text = ("UnLoad")
+    }
+    { HomeServo Button
+      MoveScaled(16,8,11,4)
+      Text = ("Home")
+    }
+    { ReadPosition Button
+      MoveScaled(29,8,13,4)
+      Text = ("Read Pos")
+    }
+    { ReadVin Button
+      MoveScaled(16,13,11,4)
+      Text = ("VIN")
+    }
+    { CurrentVoltage TextBox
+      MoveScaled(29,13,13,4)
+      Enabled = False
+    }
+    { GetTemp Button
+      MoveScaled(16,18,11,4)
+      Text = ("Temp")
+    }
+    { CurrentTemp TextBox
+      MoveScaled(29,18,13,4)
+      Enabled = False
+    }
+    { MinVin TextBox
+      MoveScaled(43,13,11,4)
+    }
+    { MaxVin TextBox
+      MoveScaled(55,13,10,4)
+    }
+    { MaxTemp TextBox
+      MoveScaled(43,18,11,4)
+    }
+    { CurrentAngle TextBox
+      MoveScaled(43,8,11,4)
+      Enabled = False
+    }
+    { MovingServo Slider
+      MoveScaled(16,25,52,2)
+      ToolTip = ("Move the Servo or Speed control ")
+      MaxValue = 1000
+      Mark = True
+      Value = 500
+    }
+    { Panel3 Panel
+      MoveScaled(2,9,12,11)
+      ToolTip = ("Sets the mode of servo operation.\nIt may operate as a motor, speed controlled by the slider\nor as a servo angle controlled by the slider")
+      { MotorModeOn RadioButton
+        MoveScaled(1,4,11,3)
+        Text = ("Motor")
+      }
+      { ServoModeOn RadioButton
+        MoveScaled(1,7,11,3)
+        Text = ("Servo")
+        Value = True
+      }
+      { Label8 Label
+        MoveScaled(4,0,7,3)
+        Text = ("Mode")
+      }
+    }
+    { CheckSrvPwr Button
+      MoveScaled(43,3,11,4)
+      Text = ("Check")
+    }
+    { !CurrentServo ComboBox
+      MoveScaled(1,3,14,4)
+      #Public = True
+      ToolTip = ("This is the list of Servos Online.\nServo zero is always the broadcast address. This will allow you to control or move all of the servos at the same time. Stop all or switch all to motor or servo mode.\n\nYou can not broadcast requests for information. this is not supported")
+    }
+    { PwrOnOff TextBox
+      MoveScaled(55,3,11,4)
+      Enabled = False
+    }
+    { AngleOffset Slider
+      MoveScaled(24,32,34,4)
+      MinValue = -125
+      MaxValue = 125
+    }
+    { Label3 Label
+      MoveScaled(18,29,20,3)
+      Text = ("Angle Offset Adjust")
+    }
+    { SaveAngleOffset Button
+      MoveScaled(58,33,13,3)
+      ToolTip = ("This will save the current angle as the home position of this servo this is a software setting it is not set in the servo.")
+      Text = ("Save Angle")
+    }
+    { lab1 Label
+      MoveScaled(18,36,22,3)
+      Text = ("Get/Set Angle Limits")
+    }
+    { GetAngleLimit Button
+      MoveScaled(18,40,8,3)
+      Text = ("Get")
+    }
+    { SetAngleLimit Button
+      MoveScaled(27,40,7,3)
+      Text = ("Set")
+    }
+    { AngleLowLimit TextBox
+      MoveScaled(38,40,12,3)
+    }
+    { AngleHighLimit TextBox
+      MoveScaled(52,40,11,3)
+    }
+    { Label4 Label
+      MoveScaled(41,36,7,3)
+      Text = ("Low")
+    }
+    { Label5 Label
+      MoveScaled(53,36,7,3)
+      Text = ("High")
+    }
+    { AngleOffsetNow TextBox
+      MoveScaled(19,32,5,3)
+      Enabled = False
+      Text = ("0")
+    }
+    { SetVin Button
+      MoveScaled(66,13,4,4)
+      Text = ("Set")
+    }
+    { SetTemp Button
+      MoveScaled(66,18,4,4)
+      Text = ("Set")
+    }
+    { DisplayTimes Panel
+      MoveScaled(2,22,13,12)
+      ToolTip = ("Test the Query Response time of Servo\nThru all the layers and Back This is limited\nby the serial interface speed. \nLayers of this control\nServo is opened with a call back to the GUI object. Callback is the gui object or any object that used the library. The object must have a servo_read method.\nthis is just done once to access the servo.\ngui -> ServoManager.openServo(id, callback object) -> Servo.OpenServo(Callback object)\noutput seq:  Display(GUI) ->Servo.MessageID(parms)->IoManager-> out\nOn input messages are given to Servo Manager who routes the message to the correct servo. The servo processes the message or forwards it to the callback of it has been set. \ninput seq: IoManager -> Servomanager.Dispatch-> Servo->Callback if set\n\nTime is measured from Gui to Gui , From IoMnagaer out till Message Recieved\n")
+      { Label7 Label
+        MoveScaled(1,1,12,3)
+        Text = ("Show Time")
+      }
+      { ShowTimer RadioButton
+        MoveScaled(1,5,10,3)
+        ToolTip = ("Test the Query Response time of Servo\nThru all the layers and Back This is limited\nby the serial interface speed. \nLayers of this control\nServo is opened with a call back to the GUI object. Callback is the gui object or any object that used the library. The object must have a servo_read method.\nthis is just done once to access the servo.\ngui -> ServoManager.openServo(id, callback object) -> Servo.OpenServo(Callback object)\noutput seq:  Display(GUI) ->Servo.MessageID(parms)->IoManager-> out\nOn input messages are given to Servo Manager who routes the message to the correct servo. The servo processes the message or forwards it to the callback of it has been set. \ninput seq: IoManager -> Servomanager.Dispatch-> Servo->Callback if set\n\nTime is measured from Gui to Gui , From IoMnagaer out till Message Recieved\n")
+        Text = ("On")
+        Value = True
+      }
+      { DoNotShowTime RadioButton
+        MoveScaled(1,8,11,3)
+        ToolTip = ("Test the Query Response time of Servo\nThru all the layers and Back This is limited\nby the serial interface speed. \nLayers of this control\nServo is opened with a call back to the GUI object. Callback is the gui object or any object that used the library. The object must have a servo_read method.\nthis is just done once to access the servo.\ngui -> ServoManager.openServo(id, callback object) -> Servo.OpenServo(Callback object)\noutput seq:  Display(GUI) ->Servo.MessageID(parms)->IoManager-> out\nOn input messages are given to Servo Manager who routes the message to the correct servo. The servo processes the message or forwards it to the callback of it has been set. \ninput seq: IoManager -> Servomanager.Dispatch-> Servo->Callback if set\n\nTime is measured from Gui to Gui , From IoMnagaer out till Message Recieved\n")
+        Text = ("Off")
+      }
+    }
+    { IoTraceOnOff CheckBox
+      MoveScaled(2,37,14,5)
+      NoTabFocus = True
+      Text = ("I/O Trace")
+      Value = CheckBox.True
+    }
+    { SetHomePosition Button
+      MoveScaled(55,8,11,4)
+      ToolTip = ("Sets the home to the current read position")
+      Text = ("Set Home")
+    }
+    { SetZeroPosition Button
+      MoveScaled(55,29,16,3)
+      Text = ("Set  Zero Point")
+    }
+    { ZerPointValue TextBox
+      MoveScaled(43,29,11,3)
+      ReadOnly = True
+    }
+  }
+  { ClearScreen Button
+    MoveScaled(98,69,15,4)
+    Text = ("Clear Text")
+  }
+  { CloseAllItems Button
+    MoveScaled(18,2,12,4)
+    ToolTip = ("This will stop everything and disconnect from serial port")
+    Text = ("Stop")
+  }
+  { IoPortList ComboBox
+    MoveScaled(2,69,38,5)
+    ToolTip = ("This is the io port used to communicate with the Servo Interface /controller board.\n\nThis should be set to the correct port before you click on start to access the servos")
+  }
+  { Label6 Label
+    MoveScaled(2,62,33,7)
+    Text = ("Select an available Io port below. \nBefore Clicking start!")
+  }
+  { ServosAngles Panel
+    MoveScaled(77,45,48,23)
+    { TextBox1 TextBox
+      MoveScaled(3,7,9,3)
+      ReadOnly = True
+    }
+    { TextBox3 TextBox
+      MoveScaled(25,7,9,3)
+      ReadOnly = True
+    }
+    { TextBox4 TextBox
+      MoveScaled(36,7,9,3)
+      ReadOnly = True
+    }
+    { TextBox5 TextBox
+      MoveScaled(3,12,9,3)
+      ReadOnly = True
+    }
+    { TextBox6 TextBox
+      MoveScaled(14,12,9,3)
+      ReadOnly = True
+    }
+    { TextBox7 TextBox
+      MoveScaled(25,12,9,3)
+      ReadOnly = True
+    }
+    { TextBox8 TextBox
+      MoveScaled(36,12,9,3)
+      ReadOnly = True
+    }
+    { TextBox9 TextBox
+      MoveScaled(3,17,9,3)
+      ReadOnly = True
+    }
+    { TextBox10 TextBox
+      MoveScaled(14,17,9,3)
+      ReadOnly = True
+    }
+    { TextBox2 TextBox
+      MoveScaled(14,7,9,3)
+      ReadOnly = True
+    }
+    { TextBox11 TextBox
+      MoveScaled(25,17,9,3)
+      ReadOnly = True
+    }
+    { TextBox12 TextBox
+      MoveScaled(36,17,9,3)
+      ReadOnly = True
+    }
+    { Label9 Label
+      MoveScaled(3,1,41,3)
+      Text = ("Position Of active Servos")
+    }
+  }
+}

@@ -1,0 +1,188 @@
+' Gambas class file
+
+'Fast
+
+Export
+
+Static Public Const MaxServos As Integer = 20 ' set this to what ever you need
+Static Public Const NewServo As Integer = 1  ' Message sent when new servo is found
+
+Public IoMgr As IoManager
+
+Public Servos As Servo[] 
+
+Public IoTrace As Boolean = True
+
+Event Notice(msg As Integer, id As Byte, buffer As Byte[], RxTime As Float)
+Event Read(TheServo As Servo, id As Integer, cmd As Integer, buffer As Byte[], RxTime As Float, TxTime As Float)
+
+
+Public Sub IoTraceSet(onOff As Boolean)
+  Dim sv As Servo
+  
+  For Each sv In Servos
+    If Not IsNull(sv) Then sv.IoTraceSet(OnOff)
+  Next
+  IoMgr.IoTraceSet(OnOff)
+  IoTrace = OnOff
+  
+End
+
+Public Sub Tx2Rxlength() As Float
+  
+  Return IoMgr.IoTimeLastRx - IoMgr.IoTimeLastTx
+  
+End
+
+Public Sub TxTime() As Float
+  
+  Return IoMgr.IoTimeLastTx
+  
+End
+
+Public Sub RxTime() As Float
+  
+  Return IoMgr.IoTimeLastRx
+  
+End
+
+
+Public Sub CloseAll()
+  Dim ServI As Servo
+  For Each servi In servos
+    If Not IsNull(ServI) Then ServI.DeleteServo()
+  Next
+  
+  IoMgr.closeall()
+  
+  IoMgr = Null
+  
+  Servos = New Servo[]
+  
+End
+
+
+Public Sub _new(IoPort As String)
+  
+  If IoTrace Then Print Now, "ServoManager Connecting to port " & IoPort
+  
+  IoMgr = New IoManager(IoPort) As "MyIo"
+  
+  IoMgr.IoTraceSet(IoTrace)
+  
+  Servos = New Servo[MaxServos] 
+  Servos[0] = New Servo(254, IoMgr)  ' set the 0 servo as broadcast servo
+ 
+  iterateServos()                    ' search for servos
+  
+End
+
+Public Sub iterateServos()
+  Dim OutPutCmd As Byte[] = [85, 85, 1, 3, 14, 0]
+  
+  If IoTrace Then Print Now, "Begin Enumeration of Servos\n"
+  
+  For i As Byte = 1 To MaxServos ' 1 is reserved for new servos 0 is reserved for broadcast servers
+    OutPutCmd[2] = i
+    IoMgr.Logger("", "->Tx Smgr", OutPutCmd)
+    IoMgr.SendCommand(OutPutCmd, True, 20)
+  Next
+  
+  If IoTrace Then Print Now, "Completed Enumeration of Servos\n"
+  
+End
+
+Public Sub HomeServos()
+
+  If IoTrace Then Print Now, "Begin Homing of Servos\n"
+
+  For i As Integer = 1 To MaxServos - 1 ' 1 is reserved for new servos 0 is reserved for broadcast servers
+  If Not IsNull(Servos[i]) Then Servos[i].SERVO_MOVE_TIME_WAIT_WRITE_int(Servos[i].HomePosition, 300)
+  Next
+  
+  Servos[0].SERVO_MOVE_START()
+  
+  If IoTrace Then Print Now, "Completed Homing of Servos\n"
+  
+End
+
+Public Sub SendCommandRaw(TheCmd As Byte[])
+  IoMgr.Logger("", "->Tx SMgr Raw -", TheCmd)
+  IoMgr.SendCommand(TheCmd, False)
+  
+End
+
+Public Sub MyIo_Read(id As Integer, Len As Integer, theMessage As Byte[], RxTime1 As Float, TxTime1 As Float)
+ Dim cmd As Integer
+ 
+ IoMgr.Logger("", "<-Rx SMgr", theMessage)
+ 
+ cmd = theMessage[Servo.CmdOffset]
+
+ If id < 0 Or id > MaxServos Then
+   If IoTrace Then Print Now, "Invalid id = " & id
+   Return
+ Endif
+ 
+ Select Case cmd
+   Case 14
+     If IsNull(Servos[id]) Then
+       Servos[id] = New Servo(id, IoMgr)
+       Servos[id].IoTraceSet(IoTrace)
+       Print Now, "<> added Servo " & id
+       Raise Notice(NewServo, id, theMessage, RxTime1)
+     Else
+       If Servos[id].receivedMessage(theMessage, RxTime1) Then
+        Raise Read(Servos[id], id, cmd, TheMessage, RxTime1)
+       Endif
+     Endif
+     
+   Case Else
+     
+     If Not IsNull(Servos[id]) Then
+      If Servos[id].receivedMessage(theMessage, RxTime1, TxTime1) Then ' send it to the servo waiting for it, if told forward to user
+          Raise Read(Servos[id], id, cmd, TheMessage, RxTime1, TxTime1)
+      Endif
+     Else
+       
+       If IoTrace Then Print Now, "ID " & id & " is empty"
+       
+     Endif
+ End Select
+  
+End
+
+Public Sub OpenServo(id As Integer, Optional GetReadEvents As Boolean = True) As Servo
+  
+      If IsNull(Servos[id]) Then 
+        Return Null
+      Else 
+        Servos[id].OpenServo(GetReadEvents)
+        Return Servos[id]
+      Endif
+      
+  
+End 
+Public Sub ActiveServoCount() As Integer
+  
+   Dim cnt As Integer = 0
+   For i As Integer = 0 To MaxServos - 1
+     If Not IsNull(Servos[i]) Then Inc cnt
+   Next
+   
+   Return cnt
+   
+End
+
+Public Sub GetServoCollection() As Servo[]
+  
+  Dim MyServos As Servo[]
+  Dim ServoIn As Servo
+  MyServos = New Servo[]
+  For Each servoin In Servos
+    If Not IsNull(ServoIn) Then MyServos.Add(ServoIn)
+  Next
+  Return MyServos
+End
+
+

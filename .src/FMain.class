@@ -1,0 +1,520 @@
+' Gambas class file
+
+'Fast
+'Serial message format
+'0x55 0x55 ID Length Cmd Prm 1... Prm N Checksum
+
+'Public IoPort As SerialPort
+'Public IoBuffer As New Byte[]
+
+'Header: Two consecutive 0 x55 are received indicating the arrival Of data packets.
+'Public CmdHeader As Byte[] = [85, 85]
+
+'ID: Each servo has an ID number.ID number ranges From 0 ~ 253, converted
+'To hexadecimal 0 x00 ~ 0xFD.
+'Broadcast ID: ID No.254(0 xFE) Is The broadcast ID.If the ID number issued
+'by the controller Is 254(0 xFE), all servos will receive instructions, but they all
+'Do Not Return the response message, (except For reading the servo ID number,
+'Please refer To the following instructions For detailed instructions) To prevent
+'bus conflict.
+'Public BroacastIdCmd As Byte = 254
+
+'Public ServoIdCmd As Byte = 0
+
+'Length(data): Equal to the length of the data that is to be sent (including its
+'own one byte).That Is, the length Of the data plus 3 Is Equal To the length Of
+'this command packet, From the header To the checksum
+'Public LengthCmd As Byte = 0
+
+'Command: Control the various instructions Of servo, such As Position, speed
+'control.
+'Public CommandCmd As Byte = 0
+
+'Parameter: In addition To commands, parameter are control informations that
+'need To add.
+'Public ParmsCmd As String = "A"
+
+'Checksum: The calculation method Is As follows:
+'Checksum = ~(ID+ Length+Cmd+ Prm1+...PrmN)If the numbers in the
+'brackets are calculated And exceeded 255, Then take the lowest one byte, "~"
+'means Negation.
+'Public CheckSumCmd As Byte = 0
+
+'Command name: Just For easy identification, the user can also set according To
+'their own habits.Command name suffix "_WRITE" which represents Write
+'command, And the suffix "_READ" represents Read command.
+'Command value: That Is, the command Cmd In command packet Of Table 1
+'Length: that Is The length(data length) In table 1
+
+' Static SERVO_MOVE_TIME_READ As Byte[] = [2, 3, 7]
+' Static SERVO_MOVE_TIME_WAIT_WRITE As Byte[] = [7, 7]
+' Static SERVO_MOVE_TIME_WAIT_READ As Byte[] = [8, 3, 7]
+' Static SERVO_MOVE_START As Byte[] = [11, 3]
+' Static SERVO_MOVE_STOP As Byte[] = [12, 3]
+' Static SERVO_ID_WRITE As Byte[] = [13, 4]
+' Static SERVO_ID_READ As Byte[] = [14, 3, 4]
+' Static SERVO_ANGLE_OFFSET_ADJUST As Byte[] = [17, 4]
+' Static SERVO_ANGLE_OFFSET_WRITE As Byte[] = [18, 3]
+' Static SERVO_ANGLE_OFFSET_READ As Byte[] = [19, 3, 4]
+' Static SERVO_ANGLE_LIMIT_WRITE As Byte[] = [20, 7]
+' Static SERVO_ANGLE_LIMIT_READ As Byte[] = [21, 3, 7]
+' Static SERVO_VIN_LIMIT_WRITE As Byte[] = [22, 7]
+' Static SERVO_VIN_LIMIT_READ As Byte[] = [23, 3, 7]
+' Static SERVO_TEMP_MAX_LIMIT_WRITE As Byte[] = [24, 4]
+' Static SERVO_TEMP_MAX_LIMIT_READ As Byte[] = [25, 3, 4]
+' Static SERVO_TEMP_READ As Byte[] = [26, 3, 4]
+' Static SERVO_VIN_READ As Byte[] = [27, 3, 5]
+' Static SERVO_POS_READ As Byte[] = [28, 3, 5]
+' Static SERVO_OR_MOTOR_MODE_WRITE As Byte[] = [29, 7]
+' Static SERVO_OR_MOTOR_MODE_READ As Byte[] = [30, 3, 7]
+' Static SERVO_LOAD_OR_UNLOAD_WRITE As Byte[] = [31, 4]
+' Static SERVO_LOAD_OR_UNLOAD_READ As Byte[] = [32, 3, 4]
+' Static SERVO_LED_CTRL_WRITE As Byte[] = [33, 4]
+' Static SERVO_LED_CTRL_READ As Byte[] = [34, 3, 4]
+' Static SERVO_LED_ERROR_WRITE As Byte[] = [35, 4]
+' Static SERVO_LED_ERROR_READ As Byte[] = [36, 3, 4]
+
+'Public CurrentServo As Byte = 1
+'Public Servos As Servo[] = New Servo[100]
+
+Public SrvManager As ServoManager
+Private CurrentSrv As Servo
+
+Private IoTimerLastTX As Float = 0.0
+Private IoTimerLastRX As Float = 0.0
+Private IoTrace As Boolean = False
+Private MyServos As Servo[] = New Servo[]
+Private MyTimer As Timer = New Timer As "MyRTimer"
+Private MyTextBoxes As TextBox[] = [TextBox1, TextBox2, TextBox3, TextBox4, TextBox5, TextBox6, TextBox7, TextBox8, TextBox9, TextBox10, TextBox1, TextBox11, TextBox12]
+
+Public Sub MyRTimer_timer() ' Every tick update the servo displayed position
+  Dim InServ As Servo
+  Dim Cnt As Integer = 0
+  MyTimer.Enabled = False
+  For Each inServ In MyServos
+     If InServ.ServoId = 254 Then Continue ' skip the broadcast id
+     MyTextBoxes[cnt].text = Format(inServ.ServoPos, "###0") 'Format(Str(CFloat(inServ.ServoPos) * 0.24), "##0.00")
+     Inc cnt
+     Wait
+  Next
+  MyTimer.Enabled = True
+  ServosAngles.Refresh()
+  Wait
+End
+
+
+Public Sub IoTraceOnOff_Click()
+
+  IoTrace = IoTraceOnOff.Value
+  SrvManager.IoTraceSet(IoTrace)
+
+End
+
+
+Public Sub Form_Open()
+
+ ServoAssignmentPanel.enabled = False
+ FindAllIoPorts()
+ MyTimer.delay = 300
+ IoTrace = IoTraceOnOff.value
+ 
+ MyTextBoxes = [TextBox1, TextBox2, TextBox3, TextBox4, TextBox5, TextBox6, TextBox7, TextBox8, TextBox9, TextBox10, TextBox11, TextBox12]
+ 
+End
+
+Public Sub StartServos_Click()
+
+ SrvManager = New ServoManager(IoPortList.text) As "MyServos"
+ 
+ SrvManager.IoTraceSet(IoTraceOnOff.value)
+ 
+ CurrentSrv = SrvManager.OpenServo(0, True)
+ CurrentServo.Add(Str(0))
+ CurrentServo.index = 0
+ AccessServoPanel.Enabled = True
+ ListServos.Enabled = True
+ StopAllServosNow.Enabled = True
+ ServoAssignmentPanel.enabled = True
+ 
+End
+
+
+Public Sub CloseAllItems_Click()
+
+  MyTimer.enabled = False
+  MyServos = Null
+  If Not IsNull(SrvManager) Then
+    SrvManager.CloseAll()
+    SrvManager = Null
+    AccessServoPanel.Enabled = False
+    ListServos.Enabled = False
+    StopAllServosNow.Enabled = False
+    ServoAssignmentPanel.enabled = False
+  Endif
+
+End
+
+Public Sub FindAllIoPorts()
+  Dim fName As String
+  
+  For Each fName In Dir("/dev", "tty*")
+    IoPortList.Add("/dev/" & fName)
+  Next
+  
+  IoPortList.Index = 0
+  IoPortList.Refresh()
+End
+
+
+Public Sub MyServos_Notice(msg As Integer, id As Byte, Buffer As Byte[], RxTime As Float)
+  
+  
+  
+  Select Case msg
+    Case SrvManager.NewServo ' we need to update the servo drop down list another servo was found
+        If IoTrace Then Print Now, "Servo message recieved", msg, id, Str(buffer), RxTime
+        CurrentServo.Add(Str(id))
+        MyTimer.Enabled = False
+        MyServos = SrvManager.GetServoCollection()
+        MyTimer.Enabled = True
+        ReadOut.text &= "Found New Servo ID=" & id & "\tStart Position Polling\n"
+
+        Wait
+        MyServos.last.BeginPolling()
+  End Select
+  
+End
+
+
+Public Sub MyServos_Read(ServoIn As Servo, ID As Integer, Cmd As Integer, IoBuffer As Byte[], RxTime As Float, TxTime As Float)
+
+  Dim inByte As Byte = 0
+  Dim inData As String = ""
+  Dim volts As Float
+  
+  IoTimerLastRX = Timer
+  
+  Logger("", Str("<-Rx Fmain(" & RxTime & ")-"), IoBuffer)
+  
+  If (ShowTimer.value = True) And (cmd <> 28) Then
+     InData = Subst("** GUI->GUI\t\t&1  &2 ms\n", Format(cmd, "##"), Format(Int((IoTimerLastRx - IoTimerLastTx) * 1000), "###0"))
+     InData &= Subst("** Servo->Servo ID=&1\t&2  &3 ms\n", Format(ID, "##"), Format(cmd, "##"), Format(Int((ServoIn.IoTimeLastRx - ServoIn.IoTimeLastTx) * 1000), "###0"))
+     InData &= Subst("** IoPort->IoPort\t&1  &2 ms\n", Format(cmd, "##"), Format(Int((RxTime - TxTime) * 1000.0), "###0"))
+     ReadOut.text &= inData
+     
+  Endif
+  
+  Select Case IoBuffer[Servo.CmdOffset]
+    
+    Case 21 ' we have Angle limits reading
+      volts = (IoBuffer[Servo.Parm1 + 1] * 256 + IoBuffer[Servo.Parm1]) 
+      AngleLowLimit.text = Str(volts)
+      volts = (IoBuffer[Servo.Parm2 + 1] * 256 + IoBuffer[Servo.Parm2])
+      AngleHighLimit.text = Str(volts)
+      
+    Case 23 ' we have a vin limits reading
+      volts = (IoBuffer[Servo.Parm1 + 1] * 256 + IoBuffer[Servo.Parm1]) / 1000.00
+      MinVin.text = Str(volts)
+      volts = (IoBuffer[Servo.Parm2 + 1] * 256 + IoBuffer[Servo.Parm2]) / 1000.00
+      MaxVin.text = Str(volts)
+      
+    Case 25 ' we have a max Temp reading
+      volts = IoBuffer[Servo.Parm1]
+      MaxTemp.text = Str(volts)
+      
+    Case 26 ' we have a Temp reading
+        volts = IoBuffer[Servo.Parm1] 
+        CurrentTemp.text = Str(volts)
+      
+    Case 27 ' we have a voltage reading
+        volts = (IoBuffer[Servo.Parm1 + 1] * 256 + IoBuffer[Servo.Parm1]) / 1000.00
+        currentvoltage.text = Str(volts)
+      
+    Case 28 ' We have current pos reading
+      volts = ((IoBuffer[Servo.Parm1 + 1] * 256) + IoBuffer[Servo.Parm1]) * 0.24
+      CurrentAngle.text = Str(volts)
+      
+    Case 32 ' We have power status reading
+      volts = IoBuffer[Servo.Parm1]
+      PwrOnOff.text = Str(volts)
+
+  End Select
+  
+  Catch 
+    Message.Error(Error.text & "," & Error.where & " , " & Error.code)
+
+End
+
+
+Public Sub DoAssign_Click()
+
+ Dim OutPutCmd As Byte[] = [85, 85, 1, 4, 13, 1, 0]
+ 
+ OutPutCmd[2] = Val(ServoAssignFrom.text)
+ OutPutCmd[5] = Val(ServoAssignTo.text)
+ If Message("Are you sure you want to Change the Servo ID of " & ServoAssignFrom.text & " To " & ServoAssignTo.text) Then
+  SrvManager.SendCommandRaw(OutPutCmd)
+  Message("Value changed")
+ Endif
+ 
+End
+
+
+Public Sub ListServos_Click()
+  Dim srv As Servo
+  If IoTrace Then ReadOut.text &= "Begin Enumeration of Servos\n"
+  CurrentServo.Clear()
+  For i As Byte = 0 To ServoManager.MaxServos - 1
+    srv = SrvManager.OpenServo(i, False)
+    If Not IsNull(srv) Then
+        If IoTrace Then ReadOut.text &= "<- Servo Number " & i & " Is Active \n"
+        CurrentServo.Add(Str(i))
+        srv.CloseServo()
+    Endif
+    
+  Next
+  
+  CurrentSrv = SrvManager.OpenServo(0, True)
+  
+  CurrentServo.index = 0
+  CurrentServo.Refresh()
+  
+  If IoTrace Then ReadOut.text &= "End Enumeration of Servos\n"
+  
+  MyTimer.Enabled = False
+  MyServos = SrvManager.GetServoCollection()
+  MyTimer.Enabled = True
+  
+End
+
+Public Sub Button2_Click()
+
+CloseAllItems_Click()
+
+Quit 0
+
+End
+
+
+Public Sub form_Close()
+
+  CloseAllItems_Click()
+  
+End
+
+
+
+Public Sub LoadServo_Click()
+Dim ID As Integer
+  ID = Val(CurrentServo.text)
+  CurrentSrv.SERVO_LOAD_OR_UNLOAD_WRITE(1)
+End
+
+Public Sub CheckSrvPwr_Click()
+
+  CurrentSrv.SERVO_LOAD_OR_UNLOAD_READ()
+  IoTimerLasttX = Timer
+End
+
+Public Sub UnLoad_Click()
+   CurrentSrv.SERVO_LOAD_OR_UNLOAD_WRITE(0)
+End
+
+Public Sub HomeServo_Click()
+  If CurrentSrv.ServoId = 254 Then
+    SrvManager.HomeServos()
+  Else
+    CurrentSrv.HomeServo()
+    If ServoModeOn.value Then
+     MovingServo.value = CurrentSrv.HomePosition
+     ReadPosition_click()
+    Endif
+  Endif
+  
+End
+
+Public Sub ReadPosition_Click()
+
+  CurrentSrv.SERVO_POS_READ()
+  IoTimerLastTX = Timer
+  
+End
+
+Public Sub ReadVin_Click()
+
+
+   CurrentSrv.SERVO_VIN_READ()
+   IoTimerLastTX = Timer
+   CurrentSrv.SERVO_VIN_LIMIT_READ()
+   IoTimerLastTX = Timer
+
+End
+
+Public Sub GetTemp_Click()
+
+  CurrentSrv.SERVO_TEMP_READ()
+  IoTimerLastTX = Timer
+  CurrentSrv.SERVO_TEMP_MAX_LIMIT_READ()
+  IoTimerLastTX = Timer
+
+End
+
+Public Sub MovingServo_Change()
+
+  If MotorModeOn.value Then
+    CurrentSrv.SERVO_OR_MOTOR_MODE_WRITE(1, MovingServo.Value)
+  Else
+     CurrentSrv.SERVO_MOVE_TIME_WRITE_INT(MovingServo.Value, 0)
+     CurrentAngle.text = Str(CFloat(MovingServo.Value) * 0.24)
+  Endif
+  
+End
+
+Public Sub MotorModeOn_Click()
+
+  MovingServo.MinValue = -1000
+  MovingServo.MaxValue = 1000
+  MovingServo.value = 0
+  CurrentSrv.SERVO_OR_MOTOR_MODE_WRITE(1, 0)
+
+End
+
+Public Sub ServoModeOn_Click()
+
+  MovingServo.MinValue = 0
+  MovingServo.MaxValue = 1000
+  MovingServo.value = 500
+  CurrentSrv.SERVO_OR_MOTOR_MODE_WRITE(0, 500)
+
+End
+
+Public Sub ClearScreen_Click()
+
+  ReadOut.Clear()
+
+End
+
+
+
+Public Sub StopAllServosNow_Click()
+  Dim broadcast As Servo
+  
+  ' we want to broadcast to all the servos
+  broadcast = SrvManager.OpenServo(0) ' zero is always the broadcast address
+  broadcast.SERVO_MOVE_STOP()
+  
+   
+End
+
+
+Public Sub CurrentServo_Click()
+
+  If Not IsNull(CurrentSrv) Then CurrentSrv.CloseServo()
+  CurrentSrv = SrvManager.OpenServo(Val(CurrentServo.text), Me)
+  
+  If IsNull(CurrentSrv) Then
+    CurrentServo.text = "0"
+    CurrentSrv = SrvManager.OpenServo(0, Me)
+  Endif
+  
+  If Val(CurrentServo.text) > 0 Then
+    ReadPosition_click()
+    ReadVin_click()
+    CheckSrvPwr_Click()
+    GetTemp_Click()
+    GetAngleLimit_Click()
+    SetHomePosition.text = "Set:" & Format(CurrentSrv.HomePosition, "###0")
+    ZerPointValue.text = Format(CurrentSrv.ZeroPointOffset, "###0")
+  Endif
+  
+End
+
+Public Sub AngleOffset_Change()
+
+  AngleOffsetNow.text = Str(AngleOffset.Value)
+  CurrentSrv.SERVO_ANGLE_OFFSET_ADJUST_INT(AngleOffset.Value)
+End
+
+Public Sub SaveAngleOffset_Click()
+
+  CurrentSrv.SERVO_ANGLE_OFFSET_WRITE()
+
+End
+
+Public Sub GetAngleLimit_Click()
+
+  CurrentSrv.SERVO_ANGLE_LIMIT_READ()
+  IoTimerLastTX = Timer
+  
+
+End
+
+Public Sub SetAngleLimit_Click()
+  
+  CurrentSrv.SERVO_ANGLE_LIMIT_WRITE_INT(Val(AngleLowLimit.text), Val(AngleHighLimit.text))
+
+End
+
+
+Public Sub SetVin_Click()
+
+  CurrentSrv.SERVO_VIN_LIMIT_WRITE(CFloat(MinVin.text), CFloat(maxVin.text))
+
+End
+
+Public Sub SetTemp_Click()
+
+  CurrentSrv.SERVO_TEMP_MAX_LIMIT_WRITE_DATA(Val(MaxTemp.text))
+
+End
+
+
+
+Public Sub SetHomePosition_Click()
+Dim servfix As Servo
+
+  If CurrentSrv.ServoId = 254 Then
+    
+      SrvManager.HomeServos()
+    
+  Else
+
+      CurrentSrv.HomePositionSet(CurrentSrv.ServoPos)       'Set(CFloat(CurrentAngle.text) / 0.24)
+  
+  Endif
+
+End
+Public Sub Logger(msghdr As String, BufferHdr As String, buffer As Byte[], Optional ID As Integer = -1)
+  Dim inByte As Byte
+  Dim inData As String
+  
+  If IoTrace Then 
+        If Not (msghdr = "") Then Print Subst(Msghdr, id) & "\n"
+        inData = Now & "-" & BufferHdr
+        For Each inByte In buffer
+         inData &= (Str$(inByte) & " ")
+         Next
+        Print inData & "\n"
+    Endif
+  
+End
+
+
+Public Sub TestingLeg_Click()
+
+  Legs.Show()
+
+End
+
+Public Sub SetZeroPosition_Click()
+  Dim xx As Servo
+  
+  If CurrentSrv.ServoId = 254 Then
+    For Each xx In MyServos
+      xx.ZeroPointOffset = xx.ServoPos
+    Next
+  Else
+    CurrentSrv.ZeroPointOffset = CurrentSrv.ServoPos
+  Endif
+
+End

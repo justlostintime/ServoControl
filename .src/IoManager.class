@@ -1,0 +1,270 @@
+' Gambas class file
+
+'Fast
+
+Export
+
+Public IoPort As SerialPort
+Public WaitingForReply As Integer = 0
+Public RxDataBusy As Integer = 0
+'Private SrvMgr As ServoManager
+Private SendQueue As QueueEntry[] = New QueueEntry[]  ' max starting queue length ?
+Private ReadQueue As Byte[] = New Byte[]       ' Recieved messages for dispatch
+
+Public IoTimer As Timer = New Timer As "MyTimer"
+Public DispatchTimer As Timer = New Timer As "MyDispatch"
+
+Public IoTimeOutDelay As Integer = 100 ' can be changed by the user default to 100
+
+Public IoTimeLastTx As Float 
+Public IoTimeLastRx As Float
+
+Public IoTrace As Boolean = False
+
+Event Read(Id As Integer, len As Integer, Buffer As Byte[], RxTime As Float, TxTime As Float)
+
+Public Sub IoTraceSet(OnOff As Boolean)
+  
+  IoTrace = OnOff
+  
+End
+
+Public Sub closeall()
+  
+  IoPort.Close()
+  IoTimer.Stop()
+  DispatchTimer.enabled = False
+  
+End
+
+
+Public Sub _new(PortName As String)
+
+  IoPort = New SerialPort As "IoPort"
+  IoPort.PortName = PortName
+  
+  IoPort.Speed = 115200
+  IoPort.FlowControl = SerialPort.None
+
+  If IoTrace Then Print Now, IoPort.DataBits, IoPort.Even, IoPort.Parity, IoPort.Speed, IoPort.FlowControl, IoPort.Blocking, IoPort.StopBits
+  
+  IoPort.Open()
+  IoPort.DTR = True
+    
+  IoPort.Watch(gb.read, True)
+  
+  DispatchTimer.Delay = 1
+  
+Catch 
+    Message("Open of the IO Port failed Error=" & Error.text & "(" & Error.Where & ")")
+End
+
+
+Public Sub IoPort_Read()
+
+ Dim Ilen, Rpos As Integer
+ 
+  While RxDataBusy
+    If IoTrace Then Print Now, "Receive in busy wait state"
+    Wait 0.001
+  Wend
+  
+  Inc RxDataBusy
+  
+    IoTimer.Enabled = False ' we have an input message so stop the time if it is running
+    If WaitingForReply Then Dec WaitingForReply
+        Logger("<~RX Msg Recieved to Buffer Offset=" & Rpos & ", Length=" & Ilen, "<~Rx Buf Before Read", ReadQueue)
+    Ilen = Lof(IoPort)
+    Rpos = ReadQueue.length
+
+    ReadQueue.Resize(RPos + Ilen)
+    Try ReadQueue.Read(IoPort, Rpos, Ilen)
+    
+    IoTimeLastRx = Timer
+    
+    Logger("", "<~Rx Read Len=" & iLen & " : ", ReadQueue)
+    
+    DispatchTimer.Enabled = True
+    
+  Dec RxDataBusy
+  
+    Catch 
+        Print Now, "IoPort_Read Failed ", Error.text, Error.where, Error.code, "\n"
+        Dec RxDataBusy
+  End
+  
+  
+ Public Sub MyDispatch_Timer()
+ 
+   Dim IoPartBuf As Byte[]
+   
+    DispatchTimer.enabled = False
+      
+      IoPartBuf = GetMessagefromQ()
+     
+      While Not IsNull(IoPartBuf)
+       
+        IoTimeLastRx = Timer
+        
+        Logger("++Rx> Dispatch event to ServoManager for processing", "<~~Rx : ", IoPartBuf)
+        
+        Raise read(IoPartBuf[Servo.IdOffset], IoPartBuf[Servo.LenOffset], IoPartBuf, Timer, IoTimeLastTx)
+        
+        IoPartBuf = GetMessagefromQ()
+        
+      Wend
+      
+      If Not WaitingForReply Then SendFromQ()
+      
+End
+
+Private Sub GetMessagefromQ() As Byte[]
+  
+  Dim IoBuf As Byte[]
+  Dim Len As Integer
+  
+  If ReadQueue.length = 0 Then 
+     If IoTrace Then Print Now, "Q Is Empty Return Null\n"
+     Return Null
+  Endif
+  
+  While ReadQueue[0] <> 85    ' Remove any  junk from stream
+    ReadQueue.Remove(0)
+    If ReadQueue.length = 0 Then 
+       If IoTrace Then Print Now, "Q Begins with bad header Return NULL"
+       Return Null
+    Endif
+  Wend
+  
+  If ReadQueue.length < 7 Then
+    If IoTrace Then Print Now, "Incomplete Message encountered"
+    Return Null
+  Else
+    If ReadQueue[1] = 85 Then                  ' we have a message
+     If ReadQueue.length < 7 Then Return Null ' we did not get the whole message
+      len = ReadQueue[Servo.LenOffset] + 3     ' length of the whole message we are after
+      If len > 10 Or len < 7 Then
+        If IoTrace Then Print Now, "Found Good Header but bad body calling self Getmessage"
+        ReadQueue.remove(0, 2)
+        Return GetMessagefromQ()
+      Else
+        IoBuf = ReadQueue.Copy(0, len)
+        ReadQueue.Remove(0, len)
+      Endif
+    Else
+      ReadQueue.Remove(0, 2)
+      If IoTrace Then Print Now, "Found junk calling self GetMessageFromQ"
+      Return GetMessagefromQ()  ' very bad form..... oh well
+    Endif
+   Endif 
+
+  If IoTrace Then Print Now, "Q Iobuf returned with good value"
+  Return IoBuf
+  Catch
+    Print "GetMessagefromQ crash " & Error.text, Error.where, Error.Code, "\n"
+    Print "to"
+End
+
+
+
+Public Sub SendCommand(TheCmd As Byte[], Optional Waiting As Boolean = False, TimeOut As Integer = 1000)
+Dim Qh As QueueEntry
+Dim QBuffer As Byte[]
+
+  If IoTrace Then Print Now, "~Tx Wait=" & Str(Waiting) & ", Timeout=" & Timeout & ", CurrentWait=" & Str(WaitingForReply), "Q Len =" & SendQueue.length
+  
+  If SendQueue.length > 40 Then
+      IoTimer.Delay = 3
+      IoTimer.enabled = True
+      Print Now, " Emergency Timer Started Queue length > 40 items\n" 
+  Endif
+    QBuffer = TheCmd.Copy()
+    Qh = New QueueEntry(Waiting, QBuffer, TimeOut)
+    SendQueue.Add(Qh, 0)
+    SendFromQ() 
+    
+End
+
+
+Private Sub SendFromQ()
+  Dim Qh As QueueEntry
+  
+  While (waitingforreply = 0) 
+    If (SendQueue.length > 0)
+    
+      qh = SendQueue.pop()
+      
+      If qh.Waiting Then Inc WaitingForReply
+      
+      chksum(qh.Buffer)
+      
+      Logger("~Tx-DQ>Next Buffer from Queue " & "Q Len = " & SendQueue.length, "~Tx-DQ>", qh.buffer)
+      
+      IoPort.Begin()
+      Write #IoPort, qh.buffer As Byte[]
+      IoPort.Send
+      
+      IoTimeLastTx = Timer
+      
+      If WaitingForReply Then
+        IoTimer.Enabled = False
+        IoTimer.Delay = qh.TimeOut
+        IoTimer.Enabled = True
+      Endif
+      
+    Else
+      If IoTrace Then Print Now, "-Tx Send Queue is empty break out of loop\n"
+      Break
+    Endif
+    
+  Wend
+  
+End
+
+Public Sub MyTimer_Timer()
+
+  If IoTrace Then Print Now, "~> Send Timeout happened!\n"
+  
+  IoPort_Read() ' just check for more data
+  
+  IoTimer.Enabled = False
+  
+  If WaitingForReply Then
+    Dec WaitingForReply
+    SendFromQ()
+  Endif
+  
+End
+
+
+'Checksum: The calculation method Is As follows:
+'Checksum = ~(ID+ Length+Cmd+ Prm1+...PrmN)If the numbers in the
+'brackets are calculated And exceeded 255, Then take the lowest one byte, "~"
+'means Negation.
+
+Public Sub chksum(cmdBuff As Byte[])
+Dim cmdlen As Integer = (cmdBuff[3] - 1)
+Dim chksumcalc As Integer = cmdBuff[2]
+
+  For i As Integer = 0 To cmdlen - 1 
+    chksumcalc += cmdBuff[3 + i]
+  Next
+  
+  chksumcalc = (Not chksumcalc) And &HFF
+  cmdBuff[cmdBuff[3] + 2] = chksumcalc
+  
+End
+Public Sub Logger(msghdr As String, BufferHdr As String, buffer As Byte[], Optional ID As Integer = -1)
+  Dim inByte As Byte
+  Dim inData As String
+  
+  If IoTrace Then 
+        If Not (msghdr = "") Then Print Now, Subst(Msghdr, id) & "\n"
+        inData = Now & "-" & BufferHdr
+        For Each inByte In buffer
+         inData &= (Str$(inByte) & " ")
+         Next
+        Print inData & "\n"
+    Endif
+  
+End
