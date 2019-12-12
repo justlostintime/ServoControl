@@ -1,0 +1,96 @@
+' Gambas class file
+
+Public ReadQueues As Byte[][] = New Byte[][]
+Public IoPortList As SerialPort[] = New SerialPort[]
+Public IoTrace As Boolean = False
+
+Public Sub ReadPort(IoPort As SerialPort)
+  Dim RxQ As Byte[] = New Byte[]
+  ReadQueues.Add(RxQ)
+  IoPortList.Add(IoPort)
+  Catch
+    Message("Assign to ReadQueue Failed Error=" & Error.text & ", " & Error.where & " ," & Error.Code)
+End
+
+Public Sub _get(IoPort As SerialPort) As Byte[]
+  Dim IdPort As SerialPort
+  Dim i As Integer = 0
+  
+  For Each IdPort In IoPortList
+    If IdPort = IoPort Then Return ReadQueues[i]
+    Inc i
+  Next
+  Return Null
+End
+
+Public Sub _next() As Byte[]
+  
+  Dim RxMsg As Byte[]
+  
+  RxMsg = GetMessageFromQ()
+  If IsNull(RxMsg) Then
+    Enum.Stop
+    Return
+  Else
+    Enum.index = RxMsg
+    Return RxMsg
+  Endif
+  
+End
+
+
+
+Public Sub GetMessageFromQ() As Byte[]
+
+Dim IoBuf As Byte[]
+Dim Len As Integer
+Dim ReadQueue As Byte[]
+  
+For Each ReadQueue In ReadQueues
+    
+  If ReadQueue.length = 0 Then 
+     If IoTrace Then Print Now, "Q Is Empty Return Null\n"
+     Continue
+  Endif
+  
+  While ReadQueue[0] <> 85    ' Remove any  junk from stream
+    ReadQueue.Remove(0)
+    If ReadQueue.length = 0 Then 
+       If IoTrace Then Print Now, "Q Begins with bad header Return NULL"
+       Continue
+    Endif
+  Wend
+  
+  If ReadQueue.length < 7 Then
+    If IoTrace Then Print Now, "Incomplete Message encountered"
+    Continue
+  Else
+    If ReadQueue[1] = 85 Then                  ' we have a message
+     If ReadQueue.length < 7 Then Return Null  ' we did not get the whole message
+      len = ReadQueue[Servo.LenOffset] + 3     ' length of the whole message we are after
+      If len > 10 Or len < 7 Then
+        If IoTrace Then Print Now, "Found Good Header but bad body calling self Getmessage"
+        ReadQueue.remove(0, 2)
+        Return GetMessagefromQ()
+      Else
+        IoBuf = ReadQueue.Copy(0, len)
+        ReadQueue.Remove(0, len)
+      Endif
+    Else
+      ReadQueue.Remove(0, 2)
+      If IoTrace Then Print Now, "Found junk calling self GetMessageFromQ"
+      Return GetMessagefromQ()  ' very bad form..... oh well
+    Endif
+   Endif 
+
+  If IoTrace Then Print Now, "Q Iobuf returned with good value"
+  Return IoBuf
+  
+Next
+
+Return Null
+
+Catch
+    Print "GetMessagefromQ crash " & Error.text, Error.where, Error.Code, "\n"
+    Print "to"
+End

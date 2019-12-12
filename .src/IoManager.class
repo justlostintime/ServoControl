@@ -4,12 +4,14 @@
 
 Export
 
-Public IoPort As SerialPort
+Public IoPort As SerialPort[] = New SerialPort[]                           'Can support n ports And controllers
+ 
 Public WaitingForReply As Integer = 0
 Public RxDataBusy As Integer = 0
-'Private SrvMgr As ServoManager
+
 Private SendQueue As QueueEntry[] = New QueueEntry[]  ' max starting queue length ?
-Private ReadQueue As Byte[] = New Byte[]       ' Recieved messages for dispatch
+
+Private RxQueue As ReadQueues = New ReadQueues         ' Recieved messages for dispatch
 
 Public IoTimer As Timer = New Timer As "MyTimer"
 Public DispatchTimer As Timer = New Timer As "MyDispatch"
@@ -20,49 +22,63 @@ Public IoTimeLastTx As Float
 Public IoTimeLastRx As Float
 
 Public IoTrace As Boolean = False
+Public IoPortCount As Integer = 0
+Public Const Broadcast As Integer = -1
 
 Event Read(Id As Integer, len As Integer, Buffer As Byte[], RxTime As Float, TxTime As Float)
+
 
 Public Sub IoTraceSet(OnOff As Boolean)
   
   IoTrace = OnOff
+  RxQueue.IoTrace = OnOff
   
 End
 
 Public Sub closeall()
   
-  IoPort.Close()
+  IoPort[0].Close()
   IoTimer.Stop()
   DispatchTimer.enabled = False
   
 End
 
 
-Public Sub _new(PortName As String)
+Public Sub _new(PortName As String[])
 
-  IoPort = New SerialPort As "IoPort"
-  IoPort.PortName = PortName
+  Dim MyIoPort As SerialPort
   
-  IoPort.Speed = 115200
-  IoPort.FlowControl = SerialPort.None
 
-  If IoTrace Then Print Now, IoPort.DataBits, IoPort.Even, IoPort.Parity, IoPort.Speed, IoPort.FlowControl, IoPort.Blocking, IoPort.StopBits
+  MyIoPort = New SerialPort As ("IoPort" & Str(IoPortCount))
+  MyIoPort.PortName = PortName
   
-  IoPort.Open()
-  IoPort.DTR = True
-    
-  IoPort.Watch(gb.read, True)
+  MyIoPort.Speed = 115200
+  MyIoPort.FlowControl = SerialPort.None
+
+  If IoTrace Then Print Now, MyIoPort.DataBits, MyIoPort.Even, MyIoPort.Parity, MyIoPort.Speed, MyIoPort.FlowControl, MyIoPort.Blocking, MyIoPort.StopBits
+  If IoTrace Then Print Now, "Watch Object =", ("IoPort" & Str(IoPortCount))
+  
+  MyIoPort.Open()
+  MyIoPort.DTR = True
+  
+  RxQueue.ReadPort(MyIoPort)
+  RxQueue.IoTrace = IoTrace
+  
+  IoPort.Add(MyIoPort)
+  Inc IoPortCount
   
   DispatchTimer.Delay = 1
   
 Catch 
-    Message("Open of the IO Port failed Error=" & Error.text & "(" & Error.Where & ")")
+    Message("Open of the IO Port failed Port#=" & IoPortCount & ", Error=" & Error.text & "(" & Error.Where & ")")
+    Quit 0
 End
 
 
-Public Sub IoPort_Read()
+Public Sub IoPort0_Read()
 
  Dim Ilen, Rpos As Integer
+ Dim ReadQueue As Byte[]
  
   While RxDataBusy
     If IoTrace Then Print Now, "Receive in busy wait state"
@@ -70,19 +86,22 @@ Public Sub IoPort_Read()
   Wend
   
   Inc RxDataBusy
-  
+    
+    ReadQueue = RxQueue[Last]
+    
     IoTimer.Enabled = False ' we have an input message so stop the time if it is running
     If WaitingForReply Then Dec WaitingForReply
         Logger("<~RX Msg Recieved to Buffer Offset=" & Rpos & ", Length=" & Ilen, "<~Rx Buf Before Read", ReadQueue)
-    Ilen = Lof(IoPort)
+    Ilen = Lof(Last)
     Rpos = ReadQueue.length
 
     ReadQueue.Resize(RPos + Ilen)
-    Try ReadQueue.Read(IoPort, Rpos, Ilen)
+    
+    Try ReadQueue.Read(Last, Rpos, Ilen)
     
     IoTimeLastRx = Timer
     
-    Logger("", "<~Rx Read Len=" & iLen & " : ", ReadQueue)
+    Logger("IoPort=" & Str(Last), "<~Rx Read Len=" & iLen & " : ", ReadQueue)
     
     DispatchTimer.Enabled = True
     
@@ -93,81 +112,69 @@ Public Sub IoPort_Read()
         Dec RxDataBusy
   End
   
+Public Sub IoPort1_Read()
+ IoPort0_Read()
+End
+Public Sub IoPort2_Read()
+ IoPort0_Read()
+End
+Public Sub IoPort3_Read()
+ IoPort0_Read()
+End
+Public Sub IoPort4_Read()
+ IoPort0_Read()
+End
+
   
  Public Sub MyDispatch_Timer()
  
    Dim IoPartBuf As Byte[]
    
     DispatchTimer.enabled = False
+    For Each IoPartBuf In RxQueue
+      IoTimeLastRx = Timer
+      Logger("++Rx> Dispatch event to ServoManager for processing", "<~~Rx : ", IoPartBuf)
+      Raise read(IoPartBuf[Servo.IdOffset], IoPartBuf[Servo.LenOffset], IoPartBuf, Timer, IoTimeLastTx)
+    Next
       
-      IoPartBuf = GetMessagefromQ()
-     
-      While Not IsNull(IoPartBuf)
-       
-        IoTimeLastRx = Timer
-        
-        Logger("++Rx> Dispatch event to ServoManager for processing", "<~~Rx : ", IoPartBuf)
-        
-        Raise read(IoPartBuf[Servo.IdOffset], IoPartBuf[Servo.LenOffset], IoPartBuf, Timer, IoTimeLastTx)
-        
-        IoPartBuf = GetMessagefromQ()
-        
-      Wend
+      ' IoPartBuf = GetMessagefromQ()
+      ' 
+      ' While Not IsNull(IoPartBuf)
+      '  
+      '   IoTimeLastRx = Timer
+      '   
+      '   Logger("++Rx> Dispatch event to ServoManager for processing", "<~~Rx : ", IoPartBuf)
+      '   
+      '   Raise read(IoPartBuf[Servo.IdOffset], IoPartBuf[Servo.LenOffset], IoPartBuf, Timer, IoTimeLastTx)
+      '   
+      '   IoPartBuf = GetMessagefromQ()
+      '   
+      ' Wend
       
       If Not WaitingForReply Then SendFromQ()
       
 End
 
-Private Sub GetMessagefromQ() As Byte[]
-  
-  Dim IoBuf As Byte[]
-  Dim Len As Integer
-  
-  If ReadQueue.length = 0 Then 
-     If IoTrace Then Print Now, "Q Is Empty Return Null\n"
-     Return Null
-  Endif
-  
-  While ReadQueue[0] <> 85    ' Remove any  junk from stream
-    ReadQueue.Remove(0)
-    If ReadQueue.length = 0 Then 
-       If IoTrace Then Print Now, "Q Begins with bad header Return NULL"
-       Return Null
-    Endif
-  Wend
-  
-  If ReadQueue.length < 7 Then
-    If IoTrace Then Print Now, "Incomplete Message encountered"
-    Return Null
-  Else
-    If ReadQueue[1] = 85 Then                  ' we have a message
-     If ReadQueue.length < 7 Then Return Null ' we did not get the whole message
-      len = ReadQueue[Servo.LenOffset] + 3     ' length of the whole message we are after
-      If len > 10 Or len < 7 Then
-        If IoTrace Then Print Now, "Found Good Header but bad body calling self Getmessage"
-        ReadQueue.remove(0, 2)
-        Return GetMessagefromQ()
-      Else
-        IoBuf = ReadQueue.Copy(0, len)
-        ReadQueue.Remove(0, len)
-      Endif
-    Else
-      ReadQueue.Remove(0, 2)
-      If IoTrace Then Print Now, "Found junk calling self GetMessageFromQ"
-      Return GetMessagefromQ()  ' very bad form..... oh well
-    Endif
-   Endif 
-
-  If IoTrace Then Print Now, "Q Iobuf returned with good value"
-  Return IoBuf
-  Catch
-    Print "GetMessagefromQ crash " & Error.text, Error.where, Error.Code, "\n"
-    Print "to"
-End
+' Private Sub GetMessagefromQ() As Byte[]
+'   Dim IoBuf
+'   
+'   For Each IoBuf In RxQueue
+'     Logger("", "<-IoMgr From Queue:", IoBuf)
+'     Return IoBuf
+'   Next
+'   
+'   If IoTrace Then Print Now, "<-IoMgr no more Buffer in Q"
+'   
+'   Return Null
+'   
+'   Catch
+'     Print "GetMessagefromQ crash " & Error.text, Error.where, Error.Code, "\n"
+'     Print "to"
+' End
 
 
 
-Public Sub SendCommand(TheCmd As Byte[], Optional Waiting As Boolean = False, TimeOut As Integer = 1000)
+Public Sub SendCommand(IoPortIndex As Integer, TheCmd As Byte[], Optional Waiting As Boolean = False, TimeOut As Integer = 1000)
 Dim Qh As QueueEntry
 Dim QBuffer As Byte[]
 
@@ -179,7 +186,7 @@ Dim QBuffer As Byte[]
       Print Now, " Emergency Timer Started Queue length > 40 items\n" 
   Endif
     QBuffer = TheCmd.Copy()
-    Qh = New QueueEntry(Waiting, QBuffer, TimeOut)
+    Qh = New QueueEntry(IoPortIndex, Waiting, QBuffer, TimeOut)
     SendQueue.Add(Qh, 0)
     SendFromQ() 
     
@@ -188,6 +195,7 @@ End
 
 Private Sub SendFromQ()
   Dim Qh As QueueEntry
+  Dim IoIf As SerialPort
   
   While (waitingforreply = 0) 
     If (SendQueue.length > 0)
@@ -197,12 +205,20 @@ Private Sub SendFromQ()
       If qh.Waiting Then Inc WaitingForReply
       
       chksum(qh.Buffer)
+      Logger("~Tx-DQ>Next Buffer from Queue " & "Q Len = " & SendQueue.length & " IoPort=" & Str(qh.IoPort), "~Tx-DQ>", qh.buffer)
       
-      Logger("~Tx-DQ>Next Buffer from Queue " & "Q Len = " & SendQueue.length, "~Tx-DQ>", qh.buffer)
-      
-      IoPort.Begin()
-      Write #IoPort, qh.buffer As Byte[]
-      IoPort.Send
+      If qh.IoPort = -1 Then 
+        
+       For Each IoIf In IoPort
+         writedata(IoIf, qh.data)
+       Next
+        
+      Else
+        
+        IoIf = IoPort[qh.IoPort]
+        writedata(IoIf, qh.buffer)
+        
+      Endif
       
       IoTimeLastTx = Timer
       
@@ -221,11 +237,20 @@ Private Sub SendFromQ()
   
 End
 
+Public Sub writedata(IoPortOut As SerialPort, data As Byte[]) 
+
+        IoPortOut.Begin()
+        Write #IoPortOut, data As Byte[]
+        IoPortOut.Send
+        
+End
+
+
 Public Sub MyTimer_Timer()
 
   If IoTrace Then Print Now, "~> Send Timeout happened!\n"
   
-  IoPort_Read() ' just check for more data
+  IoPort0_Read() ' just check for more data
   
   IoTimer.Enabled = False
   

@@ -3,20 +3,20 @@
 Export
 
 Public ShoulderAngle As Float = 0.0               ' current angle of the sholder we will need to calculate vertical distance
-Public ShoulderOffset As Integer = 0.0                ' this is the actual servo value +- 0-1000
+Public ShoulderOffset As Integer = 0.0            ' this is the actual servo value +- 0-1000
 
 Public legUpperLen As Float = 73.00               ' length in mm
-Public legLowerLen As Float = 57.14               ' length in mm
+Public legLowerLen As Float = 57.15               ' length in mm
 
 Public LegUpperOffset As Integer = 0              ' offet from zero of these angels
 Public LegLowerOffset As Integer = 0              ' offset from zero for these angles
 
-Public DistanceToGround As Float = 60                ' mm
+Public DistanceToGround As Float = 80               ' mm
 Public MaxDistanceSupported As Float = LegUpperLen + LegLowerLen 'this is max length
-Public MinDistanceSupported As Float = 3   
+Public MinDistanceSupported As Float = 71  
 Public MaxAngleAtDistanceToGround As Float = 0.0
   '
-Public UpperAngle As Float = 35.00                ' angle of leg at top joint
+Public UpperAngle As Float = 00.00                ' angle of leg at top joint
 Public LowerAngle As Float = 00.00                ' we need to calculate this to keep lower foot at required distace for floor
 Public DistanceFromKneeToGround As Float = 00.00  ' calc this too
 
@@ -28,50 +28,70 @@ Public ServoBroadcast As Servo
 
 
 Public Sub CalcLegPos()
-  ' using AAS formula for side as angles
-  Dim AngleB As Float = 0.0
-  Dim SideB As Float = 0.0
-  Dim ThirdSide As Float = 0.0
-  Dim ThirdAngle As Float = 0.0
-  Dim AngleSide As Float = 0.0
-  Dim Calc As Float = 0.0
+  ' using SSS formula for side as angles
+  Dim KneeAngle As Float 
+  Dim AnkleAngle As Float
+  
+  Print "Requested Distance to Ground :" & DistanceToGround & "\n"
   
   If DistanceToGround > MaxDistanceSupported Then DistanceToGround = MaxDistanceSupported ' limit stupid requests
   If DistanceToGround < MinDistanceSupported Then DistanceToGround = MinDistanceSupported ' Min and Max
   
-  ' calculate the max upper angle we can support at this height
-  Thirdside = Sqr((DistanceToGround ^ 2) + (MaxDistanceSupported ^ 2))
-  ThirdAngle = Deg(ASin((Sin(Rad(90.00)) * DistanceToGround) / MaxDistanceSupported))
-  MaxAngleAtDistanceToGround = Abs(180 - ThirdAngle + 90.00)
+   Print "Actual Distance to Ground Adjusted:" & DistanceToGround & "\n"
   
-  If Abs(UpperAngle) > MaxAngleAtDistanceToGround Then ' make sure the upper angle will reach ground at requested height
+  KneeAngle = Deg(ACos((legLowerLen ^ 2 + legUpperLen ^ 2 - DistanceToGround ^ 2) / (2 * LegLowerLen * LegUpperLen)))
+  Print "The New Knee Angle is :" & KneeAngle & "\n"
+  UpperAngle = Deg(ACos((DistanceToGround ^ 2 + LegUpperLen ^ 2 - LegLowerLen ^ 2) / (2 * LegUpperLen * DistanceToGround)))
+  Print "The New Upper angle is :" & UpperAngle & " \n "
+  AnkleAngle = Deg(ACos((DistanceToGround ^ 2 + LegLowerLen ^ 2 - LegUpperLen ^ 2) / (2 * DistanceToGround * LegLowerLen)))
+  Print "The New Ankle angle is :" & AnkleAngle & "\n"
+  LowerAngle = 180 - KneeAngle
+  Print "The New Knee Joint angle :" & LowerAngle & "\n"
   
-    calc = Abs(UpperAngle) - MaxAngleAtDistanceToGround
-    
-    If UpperAngle >= 0 Then 
-      UpperAngle -= calc
-    Else
-      UpperAngle += calc
-    Endif
-  Endif
-  
-  AngleB = 180.000 - (UpperAngle + 90.000)                        ' we are always calculating for vertical distance
-  SideB = (LegUpperLen * Sin(Rad(AngleB))) / Sin(Rad(90.000))    ' now we are ready to calculate the angle needed for lower half to touch ground at required height
-  
-  DistanceFromKneeToGround = DistanceToGround - SideB
-  If DistanceFromKneeToGround > LegLowerLen Then DistanceFromKneeToGround = LegLowerLen
-  
-  LowerAngle = Deg(ASin((Sin(Rad(90.000)) * DistanceFromKneeToGround) / LegLowerLen))          ' could also be 180 minus this number for second intersection on the arc
   
 End
 
 Public Sub MoveToPosition()
   
   CalcLegPos()
-  ServoUpper.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoUpper.ZeroPointOffset + (UpperAngle / 0.24), 300)
-  ServoLower.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoLower.ZeroPointOffset - (LowerAngle / 0.24), 300)
-  ServoShoulder.SERVO_MOVE_TIME_WAIT_WRITE(ServoShoulder.ZeroPointOffset - (ShoulderAngle / 0.24), 300)
+  Print "Move to distance Upr, lowr,shoulder:", ServoUpper.ZeroPointOffset + LegUpperOffset + CInt(UpperAngle / 0.24), ServoLower.ZeroPointOffset + LegLowerOffset - CInt(LowerAngle / 0.24), ServoShoulder.ZeroPointOffset + ShoulderOffset - CInt(ShoulderAngle / 0.24), "\n"
+  
+  ServoUpper.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoUpper.ZeroPointOffset + LegUpperOffset + CInt(UpperAngle / 0.24), 300)
+  ServoLower.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoLower.ZeroPointOffset + LegLowerOffset + CInt(LowerAngle / 0.24), 300)
+  ServoShoulder.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoShoulder.ZeroPointOffset + ShoulderOffset - CInt(ShoulderAngle / 0.24), 300)
   ServoBroadcast.SERVO_MOVE_START() 
   
 End
+
+Public Sub MoveToZeroPosition()
+
+  Print "Move Zero Point Uppr,Lower,Shoulder :", ServoUpper.ZeroPointOffset + LegUpperOffset, ServoLower.ZeroPointOffset + LegLowerOffset, ServoShoulder.ZeroPointOffset + ShoulderOffset, "\n"
+  ServoUpper.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoUpper.ZeroPointOffset + LegUpperOffset, 300)
+  ServoLower.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoLower.ZeroPointOffset + LegLowerOffset, 300)
+  ServoShoulder.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoShoulder.ZeroPointOffset + ShoulderOffset, 300)
+  LowerAngle = 0
+  UpperAngle = 0
+  ShoulderAngle = 0
+  DistanceToGround = MaxDistanceSupported
+  ServoBroadcast.SERVO_MOVE_START() 
+  
+End
+
+Public Sub MoveAdjust()
+  
+  Print "Move to distance Upr, lowr,shoulder:", ServoUpper.ZeroPointOffset + LegUpperOffset + CInt(UpperAngle / 0.24), ServoLower.ZeroPointOffset + LegLowerOffset - CInt(LowerAngle / 0.24), ServoShoulder.ZeroPointOffset + ShoulderOffset - CInt(ShoulderAngle / 0.24), "\n"
+  
+  ServoUpper.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoUpper.ZeroPointOffset + LegUpperOffset + CInt(UpperAngle / 0.24), 300)
+  ServoLower.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoLower.ZeroPointOffset + LegLowerOffset - CInt(LowerAngle / 0.24), 300)
+  ServoShoulder.SERVO_MOVE_TIME_WAIT_WRITE_int(ServoShoulder.ZeroPointOffset + ShoulderOffset - CInt(ShoulderAngle / 0.24), 300)
+  ServoBroadcast.SERVO_MOVE_START() 
+  
+End
+
+
+
+
+
+
+
 

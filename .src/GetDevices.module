@@ -1,0 +1,35 @@
+' Gambas module file
+
+Public Sub GetDeviceServo() As String[]
+  
+  Dim USBList As String[] = New String[]
+  Dim USBResult As String[]
+  Dim result, r2, parm As String
+  Shell "ls /dev/ttyUSB*" To result
+  USBResult = Split(result, "\n", "", True)
+  For Each result In USBResult
+    parm = "udevadm info --name=" & result & " | grep HL-340"
+     Shell parm To r2
+     If r2 <> "" Then USBList.Add(result)
+  Next
+  
+  Return USBList
+End
+  
+Public Sub GetDeviceSR04() As String[] ' sr04 is attached to a pi zwero w by rs232 over usb
+  
+  Dim USBList As String[] = New String[]
+  Dim USBResult As String[]
+  Dim result, r2, parm As String
+  
+ Shell "ls /dev/ttyACM*" To result
+  USBResult = Split(result, "\n", "", True)
+  For Each result In USBResult
+    parm = "udevadm info --name=" & result & " | grep \"Linux-USB Serial Gadget (CDC ACM mode)\""
+     Shell parm To r2
+     If r2 <> "" Then USBList.Add(result)
+  Next
+  
+  
+  Return USBList
+End

@@ -3,7 +3,7 @@
 C
 IoPort
 v
-SerialPort
+SerialPort[]
 
 WaitingForReply
 v
@@ -37,6 +37,14 @@ IoTrace
 v
 b
 
+IoPortCount
+v
+i
+
+Broadcast
+C
+i
+-1
 :Read
 :
 
@@ -52,8 +60,8 @@ m
 _new
 m
 
-(PortName)s
-IoPort_Read
+(PortName)String[];
+IoPort0_Read
 m
 
 
@@ -61,6 +69,22 @@ Logger
 m
 
 (msghdr)s(BufferHdr)s(Buffer)Byte[];[(Id)i]
+IoPort1_Read
+m
+
+
+IoPort2_Read
+m
+
+
+IoPort3_Read
+m
+
+
+IoPort4_Read
+m
+
+
 MyDispatch_Timer
 m
 
@@ -68,11 +92,15 @@ m
 SendCommand
 m
 
-(TheCmd)Byte[];[(Waiting)b(TimeOut)i]
+(IoPortIndex)i(TheCmd)Byte[];[(Waiting)b(TimeOut)i]
 chksum
 m
 
 (cmdBuff)Byte[];
+writedata
+m
+
+(IoPortOut)SerialPort;(data)Byte[];
 MyTimer_Timer
 m
 
@@ -100,10 +128,14 @@ TxTime
 v
 f
 
+IoPort
+v
+i
+
 _new
 m
 
-(iWaiting)b(theCmd)Byte[];(tOut)i[(MsgTime)f]
+(IdPort)i(iWaiting)b(theCmd)Byte[];(tOut)i[(MsgTime)f]
 #Servo
 
 C
@@ -402,7 +434,7 @@ m
 _new
 m
 
-(ID)i(IoPortId)IoManager;
+(ID)i(IoPortId)IoManager;(IoPort)i
 SERVO_LOAD_OR_UNLOAD_WRITE
 m
 
@@ -629,7 +661,7 @@ m
 _new
 m
 
-(IoPort)s
+(IoPorts)String[];
 iterateServos
 m
 
@@ -641,7 +673,7 @@ m
 SendCommandRaw
 m
 
-(TheCmd)Byte[];
+(IoPortIndex)i(TheCmd)Byte[];
 MyIo_Read
 m
 
@@ -734,6 +766,14 @@ m
 
 
 MoveToPosition
+m
+
+
+MoveToZeroPosition
+m
+
+
+MoveAdjust
 m
 
 

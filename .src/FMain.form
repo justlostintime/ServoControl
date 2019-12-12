@@ -250,8 +250,9 @@
     ToolTip = ("This will stop everything and disconnect from serial port")
     Text = ("Stop")
   }
-  { IoPortList ComboBox
+  { !IoPortList ComboBox
     MoveScaled(2,69,38,5)
+    #Public = True
     ToolTip = ("This is the io port used to communicate with the Servo Interface /controller board.\n\nThis should be set to the correct port before you click on start to access the servos")
   }
   { Label6 Label

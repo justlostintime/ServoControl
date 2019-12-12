@@ -155,11 +155,10 @@ Public Sub CloseAllItems_Click()
 End
 
 Public Sub FindAllIoPorts()
-  Dim fName As String
+  Dim DName As String[]
   
-  For Each fName In Dir("/dev", "tty*")
-    IoPortList.Add("/dev/" & fName)
-  Next
+  DName = GetDevices.GetDeviceServo() ' only get valid names
+  IoPortList.list = DName
   
   IoPortList.Index = 0
   IoPortList.Refresh()
@@ -188,7 +187,6 @@ End
 
 Public Sub MyServos_Read(ServoIn As Servo, ID As Integer, Cmd As Integer, IoBuffer As Byte[], RxTime As Float, TxTime As Float)
 
-  Dim inByte As Byte = 0
   Dim inData As String = ""
   Dim volts As Float
   
@@ -471,7 +469,6 @@ End
 
 
 Public Sub SetHomePosition_Click()
-Dim servfix As Servo
 
   If CurrentSrv.ServoId = 254 Then
     

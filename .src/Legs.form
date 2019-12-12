@@ -45,7 +45,7 @@
   }
   { Label5 Label
     MoveScaled(45,2,14,4)
-    Text = ("Servo Name")
+    Text = ("Leg Name")
   }
   { SaveServoSettings Button
     MoveScaled(76,4,16,6)
@@ -92,5 +92,9 @@
   }
   { LegName ComboBox
     MoveScaled(45,6,25,5)
+  }
+  { MoveToZero Button
+    MoveScaled(45,12,24,4)
+    Text = ("Move To Zero Point")
   }
 }

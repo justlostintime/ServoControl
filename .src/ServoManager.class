@@ -62,33 +62,44 @@ Public Sub CloseAll()
 End
 
 
-Public Sub _new(IoPort As String)
+Public Sub _new(IoPorts As String[])
   
-  If IoTrace Then Print Now, "ServoManager Connecting to port " & IoPort
+  If IoTrace Then Print Now, "ServoManager Connecting to port " & IoPorts
   
-  IoMgr = New IoManager(IoPort) As "MyIo"
+  IoMgr = New IoManager(IoPorts) As "MyIo"
   
   IoMgr.IoTraceSet(IoTrace)
   
   Servos = New Servo[MaxServos] 
-  Servos[0] = New Servo(254, IoMgr)  ' set the 0 servo as broadcast servo
+  Servos[0] = New Servo(254, IoMgr, -1)  ' set the 0 servo as broadcast servo
  
   iterateServos()                    ' search for servos
   
 End
 
+
 Public Sub iterateServos()
   Dim OutPutCmd As Byte[] = [85, 85, 1, 3, 14, 0]
   
-  If IoTrace Then Print Now, "Begin Enumeration of Servos\n"
+  If IoTrace Then Print Now, "Begin Enumeration of All Servos\n"
   
-  For i As Byte = 1 To MaxServos ' 1 is reserved for new servos 0 is reserved for broadcast servers
-    OutPutCmd[2] = i
-    IoMgr.Logger("", "->Tx Smgr", OutPutCmd)
-    IoMgr.SendCommand(OutPutCmd, True, 20)
+  For j As Integer = 0 To IoMgr.IoPort.length - 1
+    
+    If IoTrace Then Print Now, "Begin Enumeration of Servos for port" & Str(j) & "\n"
+  
+    For i As Byte = 1 To MaxServos ' 1 is reserved for new servos 0 is reserved for broadcast servers
+     OutPutCmd[2] = i
+      IoMgr.Logger("", "->Tx Smgr", OutPutCmd)
+      
+      IoMgr.SendCommand(j, OutPutCmd, True, 20)
+      
+    Next
+    
+    If IoTrace Then Print Now, "Completed Enumeration of Servos For Port " & Str(j) & "\n"
+    
   Next
   
-  If IoTrace Then Print Now, "Completed Enumeration of Servos\n"
+  If IoTrace Then Print Now, "Completed Enumeration of All Servos\n"
   
 End
 
@@ -106,16 +117,17 @@ Public Sub HomeServos()
   
 End
 
-Public Sub SendCommandRaw(TheCmd As Byte[])
+Public Sub SendCommandRaw(IoPortIndex As Integer, TheCmd As Byte[])
+
   IoMgr.Logger("", "->Tx SMgr Raw -", TheCmd)
-  IoMgr.SendCommand(TheCmd, False)
+  IoMgr.SendCommand(IoPortIndex, TheCmd, False)
   
 End
 
 Public Sub MyIo_Read(id As Integer, Len As Integer, theMessage As Byte[], RxTime1 As Float, TxTime1 As Float)
  Dim cmd As Integer
  
- IoMgr.Logger("", "<-Rx SMgr", theMessage)
+ IoMgr.Logger("", "<-Rx SMgr Len=" & Len & " : ", theMessage)
  
  cmd = theMessage[Servo.CmdOffset]
 

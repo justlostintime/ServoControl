@@ -1,20 +1,24 @@
 ' Gambas class file
 
 Public TheLeg As Leg = New Leg
+Public NewFile As Settings = New Settings("/home/brian/Robots/legsets.conf")
 
 
 Public Sub Form_Open()
 Dim Names As String
-Dim LegNames As String[] 
 
-  names = Settings["LegNames"]
+  names = NewFile["LegNames", "Basic"]
   If Not IsNull(names) Then
     LegName.list = Split(names, "|")
+    LegName.index = 0
   Endif
   
   ShoulderServo.List = FMain.CurrentServo.List
+  
   UpperServo.list = FMain.CurrentServo.List
+  
   LowerServo.list = FMain.CurrentServo.List
+  
   TheLeg.ServoBroadcast = FMain.SrvManager.OpenServo(0)
 
 End
@@ -54,58 +58,67 @@ End
 Public Sub SetShoulderOffsetAngle_Change()
 
   TheLeg.ShoulderOffset = SetShoulderOffsetAngle.Value
-    TheLeg.MoveToPosition()
+    TheLeg.MoveAdjust()
 
 End
 
 Public Sub UpperLegOffsetAngleAdjust_Change()
 
   TheLeg.LegUpperOffset = UpperLegOffsetAngleAdjust.Value
-  TheLeg.MoveToPosition()
+  TheLeg.MoveAdjust()
 End
 
 Public Sub LowerLegOffsetAngleAdjust_Change()
 
    TheLeg.LegLowerOffset = LowerLegOffsetAngleAdjust.Value
-   TheLeg.MoveToPosition()
+   TheLeg.MoveAdjust()
 End
 
 Public Sub SaveServoSettings_Click()
 Dim Names As String
 Dim LegNames As String[] 
 
-  names = Settings["LegNames"]
+
+  names = NewFile["LegNames"]
   Legnames = Split(names, "|")
   If LegNames.Find(LegName.text) = -1 Then
     names = names & LegName.text & ""
-    Settings["LegNames"] = names
+    NewFile["LegNames"] = names
+    NewFile.Save()
   Endif
   
-  Settings["Leg" & LegName.text & "/ShoulderServoID"] = TheLeg.ServoShoulder.ServoID
-  Settings["Leg" & LegName.text & "/UpperServoID"] = TheLeg.ServoUpper.ServoID
-  Settings["Leg" & LegName.text & "/LowerServoID"] = TheLeg.ServoLower.ServoID
+  NewFile["Leg" & LegName.text & "/ShoulderServoID"] = TheLeg.ServoShoulder.ServoID
+  NewFile["Leg" & LegName.text & "/UpperServoID"] = TheLeg.ServoUpper.ServoID
+  NewFile["Leg" & LegName.text & "/LowerServoID"] = TheLeg.ServoLower.ServoID
 
-  Settings["Leg" & LegName.text & "/ShoulderAngleOffset"] = TheLeg.ShoulderOffset
-  Settings["Leg" & LegName.text & "/UpperAngleOffset"] = TheLeg.LegUpperOffset
-  Settings["Leg" & LegName.text & "/LowerAngleOffset"] = TheLeg.LegLowerOffset
-  Settings["Leg" & LegName.text & "/DistanceToGround"] = TheLeg.DistanceToGround
-  Settings["Leg" & LegName.text & "/LegUpperLen"] = TheLeg.legUpperLen
-  Settings["Leg" & LegName.text & "/LegLowerLen"] = TheLeg.legLowerLen
-  
+  NewFile["Leg" & LegName.text & "/ShoulderAngleOffset"] = TheLeg.ShoulderOffset
+  NewFile["Leg" & LegName.text & "/UpperAngleOffset"] = TheLeg.LegUpperOffset
+  NewFile["Leg" & LegName.text & "/LowerAngleOffset"] = TheLeg.LegLowerOffset
+  NewFile["Leg" & LegName.text & "/DistanceToGround"] = TheLeg.DistanceToGround
+  NewFile["Leg" & LegName.text & "/LegUpperLen"] = TheLeg.legUpperLen
+  NewFile["Leg" & LegName.text & "/LegLowerLen"] = TheLeg.legLowerLen
+  NewFile.Save()
 
 End
 
 Public Sub LoadServoSettings_Click()
   
-  TheLeg.ServoShoulder = FMain.SrvManager.OpenServo(Settings["Leg" & LegName.text & "/ShoulderServoID"])
-  TheLeg.ServoUpper = FMain.SrvManager.OpenServo(Settings["Leg" & LegName.text & "/UpperServoID"])
-  TheLeg.ServoLower = FMain.SrvManager.OpenServo(Settings["Leg" & LegName.text & "/LowerServoID"])
+  TheLeg.ServoShoulder = FMain.SrvManager.OpenServo(NewFile["Leg" & LegName.text & "/ShoulderServoID"])
+  TheLeg.ServoUpper = FMain.SrvManager.OpenServo(NewFile["Leg" & LegName.text & "/UpperServoID"])
+  TheLeg.ServoLower = FMain.SrvManager.OpenServo(NewFile["Leg" & LegName.text & "/LowerServoID"])
    
-  TheLeg.ShoulderOffset = Settings["Leg" & LegName.text & "/ShoulderAngleOffset"]
-  TheLeg.LegUpperOffset = Settings["Leg" & LegName.text & "/UpperAngleOffset"]
-  TheLeg.LegLowerOffset = Settings["Leg" & LegName.text & "/LowerAngleOffset"]
-  TheLeg.DistanceToGround = Settings["Leg" & LegName.text & "/DistanceToGround"]
-  TheLeg.legUpperLen = Settings["Leg" & LegName.text & "/LegUpperLen"]
-  TheLeg.legLowerLen = Settings["Leg" & LegName.text & "/LegLowerLen"] 
+  TheLeg.ShoulderOffset = NewFile["Leg" & LegName.text & "/ShoulderAngleOffset"]
+  TheLeg.LegUpperOffset = NewFile["Leg" & LegName.text & "/UpperAngleOffset"]
+  TheLeg.LegLowerOffset = NewFile["Leg" & LegName.text & "/LowerAngleOffset"]
+  TheLeg.DistanceToGround = NewFile["Leg" & LegName.text & "/DistanceToGround"]
+  TheLeg.legUpperLen = NewFile["Leg" & LegName.text & "/LegUpperLen"]
+  TheLeg.legLowerLen = NewFile["Leg" & LegName.text & "/LegLowerLen"] 
+  
+  NewFile.Save()
+End
+
+Public Sub MoveToZero_Click()
+
+  TheLeg.MoveToZeroPosition()
 
 End

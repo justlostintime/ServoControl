@@ -36,6 +36,7 @@ Static Public Const MinServoTravel As Float = 0.24
 
 Private GetReadEvents As Boolean = False
 Private ServoIsOpen As Boolean = False
+Private IoPortIndex As Integer = 0
 
 Public IoTimeLastTx As Float 
 Public IoTimeLastRx As Float
@@ -147,10 +148,12 @@ Public Sub IoTraceSet(OnOff As Boolean)
   
 End
 
-Public Sub _new(ID As Byte, IoPortId As IoManager)
+Public Sub _new(ID As Byte, IoPortId As IoManager, IoPort As Integer)
 
   ServoId = ID
   IoMgr = IoPortId
+  IoPortIndex = IoPort ' this is an index into the io manager for the specific serial port this servo connects to
+  
   
   HomePosition = Settings[("Servo" & Str(ServoID) & "/Home"), 500]
   ZeroPointOffset = Settings[("Servo" & Str(ServoID) & "/Zero"), 0]
@@ -168,12 +171,10 @@ End
 
 
 Public Sub receivedMessage(theMessage As Byte[], RxTime As Float, TxTime As Float) As Boolean
-Dim inByte As Byte
-Dim inData As String
- 
+
   IoTimeLastRx = Timer
   
-  IoMgr.Logger("", "<-Rx Servo(" & ServoId & ")>", theMessage, ServoID)
+  IoMgr.Logger(("RxTime=" & RxTime & ",TxTime=" & TxTime), "<-Rx Servo(" & ServoId & ")>", theMessage, ServoID)
   
   If TheMessage[CmdOffset] = 28 Then ServoPos = GetIntParm1(TheMessage)
   
@@ -187,15 +188,13 @@ End
 
 
 Sub SendCommand(TheCmd As Byte[], Optional WaitReply As Boolean = False, TimeOut As Integer = 0)
- Dim inByte As Byte
- Dim inData As String
- 
+
   IoTimeLastTx = Timer
   TheCmd[2] = ServoId
   
   IoMgr.Logger("", Str("-> Tx Servo(" & ServoId & ")>"), TheCmd, ServoId)
 
-  IoMgr.SendCommand(TheCmd, WaitReply, Timeout)
+  IoMgr.SendCommand(IoPortIndex, TheCmd, WaitReply, Timeout)
 End
 
 ' 'Checksum: The calculation method Is As follows:
