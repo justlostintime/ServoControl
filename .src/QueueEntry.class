@@ -2,9 +2,6 @@
 
 'Fast
 Export
-' Gambas class file
-
-Export
 
 Public Waiting As Boolean
 Public Buffer As Byte[]

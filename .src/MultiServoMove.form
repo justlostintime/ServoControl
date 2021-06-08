@@ -1,0 +1,43 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,91,97)
+  { SliderBox1 SliderBox
+    MoveScaled(2,82,86,8)
+    MaxValue = 1000
+    Value = 500
+  }
+  { Label1 Label
+    MoveScaled(0,2,42,3)
+    Text = ("Select the servos you want to move")
+  }
+  { ServoSelect1 ListBox
+    MoveScaled(4,7,32,72)
+    Mode = Select.Multiple
+    ScrollBar = Scroll.None
+    Sorted = True
+  }
+  { MoveNow Button
+    MoveScaled(6,90,19,4)
+    Text = ("Move Now")
+  }
+  { Panel1 Panel
+    MoveScaled(42,7,30,23)
+    { following RadioButton
+      MoveScaled(2,3,25,6)
+      Text = ("Follow")
+      Value = True
+    }
+    { waitbutton RadioButton
+      MoveScaled(2,12,25,6)
+      Text = ("Wait For Button")
+    }
+  }
+  { HomeNow Button
+    MoveScaled(27,90,19,4)
+    Text = ("Home Now")
+  }
+  { TextBox1 TextBox
+    MoveScaled(44,1,44,4)
+  }
+}

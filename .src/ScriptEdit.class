@@ -1,0 +1,58 @@
+' Gambas class file
+
+Private MyManager As ServoManager
+Private MyInterpreter As Interpreter
+Private FileName As String = ""
+
+
+Public Sub _new(SrvManager As ServoManager)
+  
+  MyManager = SrvManager
+  
+End
+
+Public Sub MenuGo_Click()
+
+  MyInterpreter = New Interpreter(TextEditor1.text, MyManager)
+
+End
+
+Public Sub MenuLoad_Click()
+
+  Dialog.Title = "Choose a Servo Script file"
+  Dialog.Filter = ["*.srv", "Servo Files", "*", "All files"]
+  Dialog.Path = "."
+  If Dialog.OpenFile() Then
+    Return ' User pressed Cancel -
+  Endif
+  TextEditor1.Load(Dialog.Path)
+  FileName = Dialog.Path
+  Catch
+  Message.Info(Error.Text)
+End
+
+Public Sub menuesave_Click()
+
+  If FileName = "" Then
+    menusaveas_Click()
+  Else
+    TextEditor1.Save(FileName)
+  Endif
+ Catch
+    Message.Info(Error.Text)
+End
+
+Public Sub menuSaveAs_Click()
+
+   Dialog.Title = "Save File"
+  Dialog.Filter = ["*.txt", "Text Files", "*", "All files"]
+  Dialog.Path = "."
+  If Dialog.SaveFile() Then
+    Return ' User pressed Cancel -
+  Endif
+  TextEditor1.Save(Dialog.Path)
+  
+  Catch
+    Message.Info(Error.Text)
+
+End

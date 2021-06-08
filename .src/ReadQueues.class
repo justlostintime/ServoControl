@@ -2,6 +2,7 @@
 
 Public ReadQueues As Byte[][] = New Byte[][]
 Public IoPortList As SerialPort[] = New SerialPort[]
+Public IoIndex As Integer    ' last returned port message
 Public IoTrace As Boolean = False
 
 Public Sub ReadPort(IoPort As SerialPort)
@@ -21,6 +22,17 @@ Public Sub _get(IoPort As SerialPort) As Byte[]
     Inc i
   Next
   Return Null
+End
+
+Public Sub IoPortIndex(IoPort As SerialPort) As Integer
+  Dim IdPort As SerialPort
+  Dim i As Integer = 0
+  
+  For Each IdPort In IoPortList
+    If IdPort = IoPort Then Return i
+    Inc i
+  Next
+  Return -1
 End
 
 Public Sub _next() As Byte[]
@@ -45,11 +57,14 @@ Public Sub GetMessageFromQ() As Byte[]
 Dim IoBuf As Byte[]
 Dim Len As Integer
 Dim ReadQueue As Byte[]
+
+IoIndex = 0
   
 For Each ReadQueue In ReadQueues
     
   If ReadQueue.length = 0 Then 
      If IoTrace Then Print Now, "Q Is Empty Return Null\n"
+     Inc IoIndex
      Continue
   Endif
   
@@ -57,12 +72,14 @@ For Each ReadQueue In ReadQueues
     ReadQueue.Remove(0)
     If ReadQueue.length = 0 Then 
        If IoTrace Then Print Now, "Q Begins with bad header Return NULL"
+       Inc IoIndex
        Continue
     Endif
   Wend
   
   If ReadQueue.length < 7 Then
     If IoTrace Then Print Now, "Incomplete Message encountered"
+    Inc IoIndex
     Continue
   Else
     If ReadQueue[1] = 85 Then                  ' we have a message

@@ -1,0 +1,74 @@
+' Gambas class file
+
+Private srvManager As ServoManager
+Private MyTime As Timer = New Timer As "MyMoveTimer"
+
+
+Public Sub _new(TheServos As String[], TheManager As ServoManager)
+  
+  ServoSelect1.List = TheServos
+  srvManager = TheManager
+  MyTime.delay = 100
+  MyTime.enabled = False
+End
+
+Public Sub Form_Open()
+
+  
+
+End
+
+Public Sub following_Click()
+
+  MoveNow.enabled = False
+
+End
+
+
+Public Sub waitbutton_Click()
+
+  MoveNow.enabled = True
+
+End
+
+Public Sub MyMoveTimer_Timer()
+  
+  MoveNow_Click()
+  
+End
+
+Public Sub SliderBox1_Change()
+
+  If following.value Then
+      MyTime.enabled = True
+      MyTime.Restart()
+  Endif
+
+End
+
+Public Sub MoveNow_Click()
+
+  MyTime.enabled = False
+  
+  For i As Integer = 0 To ServoSelect1.count - 1
+      If ServoSelect1[i].Selected Then
+        srvManager[ServoSelect1[i].text].SERVO_MOVE_TIME_WAIT_WRITE_int(SliderBox1.value, 1000)
+      Endif
+  Next
+  
+  srvManager[0].SERVO_MOVE_START()
+    
+End
+
+Public Sub HomeNow_Click()
+
+   For i As Integer = 0 To ServoSelect1.count - 1
+      If ServoSelect1[i].Selected Then
+        srvManager[ServoSelect1[i].text].MOVE_HOME_WAIT_TIMED(1000)
+      Endif
+  Next
+  
+  SliderBox1.value = 500
+  srvManager[0].SERVO_MOVE_START()
+
+End

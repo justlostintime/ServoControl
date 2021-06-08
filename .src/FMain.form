@@ -1,12 +1,24 @@
 # Gambas Form File 3.0
 
 { Form Form
-  MoveScaled(0,0,130,81)
+  MoveScaled(0,0,138,101)
   Text = ("Servo Control and management LX-16A thru BusLinker V2.2")
   { LegTesting Menu
     Text = ("Legs")
     { TestingLeg Menu
-      Text = ("testing")
+      Text = ("Configure")
+    }
+    { Groups Menu
+      Text = ("Groups")
+    }
+  }
+  { ServoControler Menu
+    Text = ("Servo Control")
+    { ServoControlMulti Menu
+      Text = ("Move Group of Servos")
+    }
+    { ScriptRunner Menu
+      Text = ("Script Runner/Edit")
     }
   }
   { StartServos Button
@@ -36,7 +48,7 @@
     }
   }
   { !ReadOut TextArea
-    MoveScaled(77,2,48,42)
+    MoveScaled(77,2,59,42)
     #Public = True
     Font = Font["DejaVu Sans Mono"]
     Text = ("Select \"Start\" To connect to Servo\ncontroller.\n\nBusLinker 2.2 and 2.1 are both\nsupported(ie tested)\n")
@@ -49,7 +61,7 @@
     Text = ("List Servos")
   }
   { Button2 Button
-    MoveScaled(114,69,10,4)
+    MoveScaled(114,89,10,4)
     Text = ("Quit")
   }
   { StopAllServosNow Button
@@ -59,7 +71,7 @@
     Text = ("Stop All Move")
   }
   { AccessServoPanel Panel
-    MoveScaled(2,17,72,46)
+    MoveScaled(2,17,72,53)
     Enabled = False
     { Label2 Label
       MoveScaled(1,1,13,2)
@@ -77,6 +89,7 @@
     }
     { HomeServo Button
       MoveScaled(16,8,11,4)
+      ToolTip = ("Moves to home position,  the point from which all angle calculations are made . It defaults to 500 center for these servos. which cam move zero to 1000")
       Text = ("Home")
     }
     { ReadPosition Button
@@ -150,47 +163,49 @@
       Enabled = False
     }
     { AngleOffset Slider
-      MoveScaled(24,32,34,4)
+      MoveScaled(17,36,34,4)
+      ToolTip = ("When You move this slider it will adjust the servo by up to 125 +or - ticks .024 degrees. This adjustment will stay until the servo is powered off. You must save the adjustment to have it written to the Servos ROM. Making it permenant.")
       MinValue = -125
       MaxValue = 125
     }
     { Label3 Label
-      MoveScaled(18,29,20,3)
-      Text = ("Angle Offset Adjust")
+      MoveScaled(19,34,32,3)
+      Text = ("Set Servo Angle Offset Adjust")
     }
     { SaveAngleOffset Button
-      MoveScaled(58,33,13,3)
-      ToolTip = ("This will save the current angle as the home position of this servo this is a software setting it is not set in the servo.")
+      MoveScaled(58,36,13,4)
+      ToolTip = ("This will program the servo to automaticall adjust all movements")
       Text = ("Save Angle")
     }
     { lab1 Label
-      MoveScaled(18,36,22,3)
+      MoveScaled(18,43,22,3)
       Text = ("Get/Set Angle Limits")
     }
     { GetAngleLimit Button
-      MoveScaled(18,40,8,3)
+      MoveScaled(18,47,8,3)
+      ToolTip = ("Program the servo with min and max angles of movement. Ie stop the robot from kill its parts")
       Text = ("Get")
     }
     { SetAngleLimit Button
-      MoveScaled(27,40,7,3)
+      MoveScaled(27,47,7,3)
       Text = ("Set")
     }
     { AngleLowLimit TextBox
-      MoveScaled(38,40,12,3)
+      MoveScaled(38,47,12,3)
     }
     { AngleHighLimit TextBox
-      MoveScaled(52,40,11,3)
+      MoveScaled(52,47,11,3)
     }
     { Label4 Label
-      MoveScaled(41,36,7,3)
+      MoveScaled(41,43,7,3)
       Text = ("Low")
     }
     { Label5 Label
-      MoveScaled(53,36,7,3)
+      MoveScaled(53,43,7,3)
       Text = ("High")
     }
     { AngleOffsetNow TextBox
-      MoveScaled(19,32,5,3)
+      MoveScaled(52,36,6,4)
       Enabled = False
       Text = ("0")
     }
@@ -225,24 +240,27 @@
       MoveScaled(2,37,14,5)
       NoTabFocus = True
       Text = ("I/O Trace")
-      Value = CheckBox.True
     }
     { SetHomePosition Button
       MoveScaled(55,8,11,4)
-      ToolTip = ("Sets the home to the current read position")
+      ToolTip = ("Sets the home to the current read position, This is the point that all angle calculations start. 500 being the default and center.")
       Text = ("Set Home")
     }
     { SetZeroPosition Button
       MoveScaled(55,29,16,3)
+      Tag = "This sets the offset from home that the servo will use when go zero point is called.\nThis is a software programmed and remeber zero position"
       Text = ("Set  Zero Point")
     }
-    { ZerPointValue TextBox
+    { ZeroPointValue TextBox
       MoveScaled(43,29,11,3)
-      ReadOnly = True
+    }
+    { Label10 Label
+      MoveScaled(17,29,23,3)
+      Text = ("Zero/Rest point adjust")
     }
   }
   { ClearScreen Button
-    MoveScaled(98,69,15,4)
+    MoveScaled(99,89,15,4)
     Text = ("Clear Text")
   }
   { CloseAllItems Button
@@ -250,68 +268,68 @@
     ToolTip = ("This will stop everything and disconnect from serial port")
     Text = ("Stop")
   }
-  { !IoPortList ComboBox
-    MoveScaled(2,69,38,5)
-    #Public = True
-    ToolTip = ("This is the io port used to communicate with the Servo Interface /controller board.\n\nThis should be set to the correct port before you click on start to access the servos")
-  }
   { Label6 Label
-    MoveScaled(2,62,33,7)
-    Text = ("Select an available Io port below. \nBefore Clicking start!")
+    MoveScaled(2,70,46,7)
+    Text = ("Select 1 or more Io port below.  Max 5 ports\nBefore Clicking start!")
   }
   { ServosAngles Panel
-    MoveScaled(77,45,48,23)
-    { TextBox1 TextBox
-      MoveScaled(3,7,9,3)
+    MoveScaled(76,47,59,24)
+    { tTextBox1 TextBox
+      MoveScaled(3,7,12,3)
       ReadOnly = True
     }
-    { TextBox3 TextBox
-      MoveScaled(25,7,9,3)
+    { tTextBox3 TextBox
+      MoveScaled(31,7,12,3)
       ReadOnly = True
     }
-    { TextBox4 TextBox
-      MoveScaled(36,7,9,3)
+    { tTextBox4 TextBox
+      MoveScaled(45,7,12,3)
       ReadOnly = True
     }
-    { TextBox5 TextBox
-      MoveScaled(3,12,9,3)
+    { tTextBox5 TextBox
+      MoveScaled(3,12,12,3)
       ReadOnly = True
     }
-    { TextBox6 TextBox
-      MoveScaled(14,12,9,3)
+    { tTextBox6 TextBox
+      MoveScaled(17,12,12,3)
       ReadOnly = True
     }
-    { TextBox7 TextBox
-      MoveScaled(25,12,9,3)
+    { tTextBox7 TextBox
+      MoveScaled(31,12,12,3)
       ReadOnly = True
     }
-    { TextBox8 TextBox
-      MoveScaled(36,12,9,3)
+    { tTextBox8 TextBox
+      MoveScaled(45,12,12,3)
       ReadOnly = True
     }
-    { TextBox9 TextBox
-      MoveScaled(3,17,9,3)
+    { tTextBox9 TextBox
+      MoveScaled(3,17,12,3)
       ReadOnly = True
     }
-    { TextBox10 TextBox
-      MoveScaled(14,17,9,3)
+    { tTextBox10 TextBox
+      MoveScaled(17,17,12,3)
       ReadOnly = True
     }
-    { TextBox2 TextBox
-      MoveScaled(14,7,9,3)
+    { tTextBox2 TextBox
+      MoveScaled(17,7,12,3)
       ReadOnly = True
     }
-    { TextBox11 TextBox
-      MoveScaled(25,17,9,3)
+    { tTextBox11 TextBox
+      MoveScaled(31,17,12,3)
       ReadOnly = True
     }
-    { TextBox12 TextBox
-      MoveScaled(36,17,9,3)
+    { tTextBox12 TextBox
+      MoveScaled(45,17,12,3)
       ReadOnly = True
     }
     { Label9 Label
       MoveScaled(3,1,41,3)
-      Text = ("Position Of active Servos")
+      Text = ("Position Of Active Servos")
     }
+  }
+  { IoPortList ListBox
+    MoveScaled(2,78,40,16)
+    Mode = Select.Multiple
+    Sorted = True
   }
 }

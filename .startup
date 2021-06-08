@@ -7,12 +7,19 @@ LX-16A Bus servo programming and management
 gb.image
 gb.gui
 gb.form
+gb.data
 gb.dbus
 gb.debug
 gb.eval
+gb.eval.highlight
+gb.form.dialog
+gb.util
+gb.form.editor
 gb.settings
+gb.form.print
 gb.term
 gb.form.terminal
 gb.logging
 gb.net
+:westwood/SharedMem:1.0
 

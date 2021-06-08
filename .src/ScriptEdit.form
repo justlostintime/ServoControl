@@ -1,0 +1,43 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,149,98)
+  Text = ("Script Edit and runner")
+  { MenuFile Menu
+    Text = ("File")
+    { MenuLoad Menu
+      Text = ("Load")
+    }
+    { menuesave Menu
+      Text = ("Save")
+    }
+    { menuSaveAs Menu
+      Text = ("Save As")
+    }
+  }
+  { menuExecute Menu
+    Text = ("Execute")
+    { MenuGo Menu
+      Text = ("Go")
+    }
+  }
+  { TextEditor1 TextEditor
+    MoveScaled(1,1,145,91)
+    #Translate = False
+    ScrollBar = Scroll.Vertical
+    Highlight = "Gambas"
+    TabIndent = True
+    ShowPosition = True
+    ShowLimit = True
+    ShowCurrent = True
+    ShowLineNumber = True
+    ShowModified = True
+    ShowBraces = True
+    ShowIcon = True
+    ShowExpand = True
+    ShowSpaces = True
+    ShowIndent = True
+    CloseBraces = True
+    CloseStrings = True
+  }
+}

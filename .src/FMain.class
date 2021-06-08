@@ -77,6 +77,7 @@
 'Public CurrentServo As Byte = 1
 'Public Servos As Servo[] = New Servo[100]
 
+Public ServoMultiPages As MultiServoMove[] = New MultiServoMove[]
 Public SrvManager As ServoManager
 Private CurrentSrv As Servo
 
@@ -84,20 +85,22 @@ Private IoTimerLastTX As Float = 0.0
 Private IoTimerLastRX As Float = 0.0
 Private IoTrace As Boolean = False
 Private MyServos As Servo[] = New Servo[]
-Private MyTimer As Timer = New Timer As "MyRTimer"
-Private MyTextBoxes As TextBox[] = [TextBox1, TextBox2, TextBox3, TextBox4, TextBox5, TextBox6, TextBox7, TextBox8, TextBox9, TextBox10, TextBox1, TextBox11, TextBox12]
+Private MyPollTimer As Timer = New Timer As "MyRTimer"
+Private MyTextBoxes As TextBox[] = [tTextBox1, tTextBox2, tTextBox3, tTextBox4, tTextBox5, tTextBox6, tTextBox7, tTextBox8, tTextBox9, tTextBox10, tTextBox1, tTextBox11, tTextBox12]
 
 Public Sub MyRTimer_timer() ' Every tick update the servo displayed position
-  Dim InServ As Servo
+  Dim InServed As Servo
   Dim Cnt As Integer = 0
-  MyTimer.Enabled = False
-  For Each inServ In MyServos
-     If InServ.ServoId = 254 Then Continue ' skip the broadcast id
-     MyTextBoxes[cnt].text = Format(inServ.ServoPos, "###0") 'Format(Str(CFloat(inServ.ServoPos) * 0.24), "##0.00")
+  Dim a As String
+  
+  MyPollTimer.Enabled = False
+  For Each inServed In MyServos
+     If InServed.ServoId = 254 Then Continue ' skip the broadcast id
+     MyTextBoxes[cnt].text = Right("0" & Str(inServed.ServoId), 2) & "=" & Format(inServed.ServoPos, "###0")
      Inc cnt
      Wait
   Next
-  MyTimer.Enabled = True
+  MyPollTimer.Enabled = True
   ServosAngles.Refresh()
   Wait
 End
@@ -115,16 +118,24 @@ Public Sub Form_Open()
 
  ServoAssignmentPanel.enabled = False
  FindAllIoPorts()
- MyTimer.delay = 300
+ MyPollTimer.delay = 300
  IoTrace = IoTraceOnOff.value
  
- MyTextBoxes = [TextBox1, TextBox2, TextBox3, TextBox4, TextBox5, TextBox6, TextBox7, TextBox8, TextBox9, TextBox10, TextBox11, TextBox12]
+ MyTextBoxes = [tTextBox1, tTextBox2, tTextBox3, tTextBox4, tTextBox5, tTextBox6, tTextBox7, tTextBox8, tTextBox9, tTextBox10, tTextBox11, tTextBox12]
  
 End
 
 Public Sub StartServos_Click()
 
- SrvManager = New ServoManager(IoPortList.text) As "MyServos"
+Dim Alist As String[] = New String[]
+
+For i As Integer = 0 To IoPortList.count - 1
+  If IoPortList[i].Selected Then
+    Alist.Add(IoPortList[i].text)
+  Endif
+Next
+
+ SrvManager = New ServoManager(AList) As "MyServos"
  
  SrvManager.IoTraceSet(IoTraceOnOff.value)
  
@@ -135,13 +146,14 @@ Public Sub StartServos_Click()
  ListServos.Enabled = True
  StopAllServosNow.Enabled = True
  ServoAssignmentPanel.enabled = True
+ StartServos.enabled = False
  
 End
 
 
 Public Sub CloseAllItems_Click()
 
-  MyTimer.enabled = False
+  MyPollTimer.enabled = False
   MyServos = Null
   If Not IsNull(SrvManager) Then
     SrvManager.CloseAll()
@@ -150,6 +162,7 @@ Public Sub CloseAllItems_Click()
     ListServos.Enabled = False
     StopAllServosNow.Enabled = False
     ServoAssignmentPanel.enabled = False
+    StartServos.enabled = True
   Endif
 
 End
@@ -172,14 +185,16 @@ Public Sub MyServos_Notice(msg As Integer, id As Byte, Buffer As Byte[], RxTime 
   Select Case msg
     Case SrvManager.NewServo ' we need to update the servo drop down list another servo was found
         If IoTrace Then Print Now, "Servo message recieved", msg, id, Str(buffer), RxTime
-        CurrentServo.Add(Str(id))
-        MyTimer.Enabled = False
+        CurrentServo.Add(Right("0" & Str(id), 2))
+        MyPollTimer.Enabled = False
         MyServos = SrvManager.GetServoCollection()
-        MyTimer.Enabled = True
+        MyPollTimer.Enabled = True
         ReadOut.text &= "Found New Servo ID=" & id & "\tStart Position Polling\n"
 
         Wait
-        MyServos.last.BeginPolling()
+        
+        SrvManager[id].BeginPolling()
+        
   End Select
   
 End
@@ -204,6 +219,10 @@ Public Sub MyServos_Read(ServoIn As Servo, ID As Integer, Cmd As Integer, IoBuff
   
   Select Case IoBuffer[Servo.CmdOffset]
     
+    Case 19 ' Angle offset information
+      volts = (IoBuffer[Servo.Parm1]) 
+      AngleOffsetNow.text = Str(volts)
+      
     Case 21 ' we have Angle limits reading
       volts = (IoBuffer[Servo.Parm1 + 1] * 256 + IoBuffer[Servo.Parm1]) 
       AngleLowLimit.text = Str(volts)
@@ -229,7 +248,7 @@ Public Sub MyServos_Read(ServoIn As Servo, ID As Integer, Cmd As Integer, IoBuff
         currentvoltage.text = Str(volts)
       
     Case 28 ' We have current pos reading
-      volts = ((IoBuffer[Servo.Parm1 + 1] * 256) + IoBuffer[Servo.Parm1]) * 0.24
+      volts = ((IoBuffer[Servo.Parm1 + 1] * 256) + IoBuffer[Servo.Parm1])
       CurrentAngle.text = Str(volts)
       
     Case 32 ' We have power status reading
@@ -279,9 +298,9 @@ Public Sub ListServos_Click()
   
   If IoTrace Then ReadOut.text &= "End Enumeration of Servos\n"
   
-  MyTimer.Enabled = False
+  MyPollTimer.Enabled = False
   MyServos = SrvManager.GetServoCollection()
-  MyTimer.Enabled = True
+  MyPollTimer.Enabled = True
   
 End
 
@@ -363,7 +382,9 @@ Public Sub MovingServo_Change()
     CurrentSrv.SERVO_OR_MOTOR_MODE_WRITE(1, MovingServo.Value)
   Else
      CurrentSrv.SERVO_MOVE_TIME_WRITE_INT(MovingServo.Value, 0)
-     CurrentAngle.text = Str(CFloat(MovingServo.Value) * 0.24)
+     CurrentAngle.text = MovingServo.Value
+     ZeroPointValue.text = MovingServo.Value - 500
+     Wait
   Endif
   
 End
@@ -421,8 +442,9 @@ Public Sub CurrentServo_Click()
     CheckSrvPwr_Click()
     GetTemp_Click()
     GetAngleLimit_Click()
+    GetAngleOffset_Click()
     SetHomePosition.text = "Set:" & Format(CurrentSrv.HomePosition, "###0")
-    ZerPointValue.text = Format(CurrentSrv.ZeroPointOffset, "###0")
+    ZeroPointValue.text = Format(CurrentSrv.ZeroPointOffset, "###0")
   Endif
   
 End
@@ -431,6 +453,7 @@ Public Sub AngleOffset_Change()
 
   AngleOffsetNow.text = Str(AngleOffset.Value)
   CurrentSrv.SERVO_ANGLE_OFFSET_ADJUST_INT(AngleOffset.Value)
+  
 End
 
 Public Sub SaveAngleOffset_Click()
@@ -438,6 +461,14 @@ Public Sub SaveAngleOffset_Click()
   CurrentSrv.SERVO_ANGLE_OFFSET_WRITE()
 
 End
+
+Public Sub GetAngleOffset_Click()
+  
+  CurrentSrv.SERVO_ANGLE_OFFSET_READ()
+  IoTimerLastTX = Timer
+  
+End
+
 
 Public Sub GetAngleLimit_Click()
 
@@ -508,10 +539,44 @@ Public Sub SetZeroPosition_Click()
   
   If CurrentSrv.ServoId = 254 Then
     For Each xx In MyServos
-      xx.ZeroPointOffset = xx.ServoPos
+      xx.ZeroPointOffset = Val(SetZeroPosition.text)
     Next
   Else
-    CurrentSrv.ZeroPointOffset = CurrentSrv.ServoPos
+    CurrentSrv.ZeroPointOffset = Val(SetZeroPosition.text)
   Endif
+
+End
+
+Public Sub Groups_Click()
+
+  LegGroups.Show()
+
+End
+
+Public Sub AngleOffsetNow_Change()
+
+  AngleOffset.value = Val(AngleOffsetNow.text)
+
+End
+
+Public Sub ZeroPointValue_Change()
+
+  MovingServo.value = 500 + Val(ZeroPointValue.text)
+
+End
+
+Public Sub ServoControlMulti_Click()
+
+  Dim s As MultiServoMove = New MultiServoMove(CurrentServo.list, SrvManager)
+  'ServoMultiPages.Add(s)
+  s.show
+
+End
+
+Public Sub ScriptRunner_Click()
+
+  Dim s As ScriptEdit = New Scriptedit(SrvManager)
+  s.show
+  
 
 End

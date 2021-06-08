@@ -48,7 +48,7 @@ i
 :Read
 :
 
-(Id)i(len)i(Buffer)Byte[];(RxTime)f(TxTime)f
+(IoPortIndex)i(Id)i(len)i(Buffer)Byte[];(RxTime)f(TxTime)f
 IoTraceSet
 m
 
@@ -60,15 +60,19 @@ m
 _new
 m
 
-(PortName)String[];
-IoPort0_Read
+(PortNames)String[];
+IoPort_Read
 m
 
-
+(IfPort)SerialPort;
 Logger
 m
 
 (msghdr)s(BufferHdr)s(Buffer)Byte[];[(Id)i]
+IoPort0_Read
+m
+
+
 IoPort1_Read
 m
 
@@ -599,6 +603,10 @@ OpenServo
 m
 
 (GetReadEventsRequest)b
+MOVE_HOME_WAIT_TIMED
+m
+
+(TheTime)i
 CloseServo
 m
 
@@ -677,7 +685,7 @@ m
 MyIo_Read
 m
 
-(id)i(Len)i(theMessage)Byte[];(RxTime1)f(TxTime1)f
+(IoPortIndex)i(id)i(Len)i(theMessage)Byte[];(RxTime1)f(TxTime1)f
 OpenServo
 m
 Servo
@@ -690,34 +698,18 @@ GetServoCollection
 m
 Servo[]
 
+_get
+m
+Servo
+(id)i
 #leg
 
 C
-ShoulderAngle
-v
-f
-
-ShoulderOffset
-v
-i
-
 legUpperLen
 v
 f
 
 legLowerLen
-v
-f
-
-LegUpperOffset
-v
-i
-
-LegLowerOffset
-v
-i
-
-DistanceToGround
 v
 f
 
@@ -729,21 +721,41 @@ MinDistanceSupported
 v
 f
 
+DistanceFromKneeToGround
+v
+f
+
+DistanceToGround
+v
+f
+
+ShoulderOffset
+v
+i
+
+LegUpperOffset
+v
+i
+
+LegLowerOffset
+v
+i
+
 MaxAngleAtDistanceToGround
 v
 f
 
+ShoulderAngle
+v
+i
+
 UpperAngle
 v
-f
+i
 
 LowerAngle
 v
-f
-
-DistanceFromKneeToGround
-v
-f
+i
 
 ServoUpper
 v
@@ -761,19 +773,51 @@ ServoBroadcast
 v
 Servo
 
+MovementSpeed
+C
+i
+500
+MyName
+v
+s
+
 CalcLegPos
 m
 
 
+Save
+m
+
+(LegProfiles)Settings;[(LegName)s]
+Load
+m
+
+(LegProfiles)Settings;(LegName)s
 MoveToPosition
 m
 
 
+timedmove
+m
+
+(lower)i(upper)i(shoulder)i[(timetotarget)i]
 MoveToZeroPosition
 m
 
 
+settozero
+m
+
+
 MoveAdjust
+m
+
+
+nextposition
+m
+
+(lower)i(upper)i(shoulder)i[(timetotarget)i]
+beginmove
 m
 
 

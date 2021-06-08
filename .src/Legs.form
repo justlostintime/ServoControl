@@ -1,8 +1,8 @@
 # Gambas Form File 3.0
 
 { Form Form
-  MoveScaled(0,0,141,79)
-  Text = ("Leg Testing")
+  MoveScaled(0,0,146,79)
+  Text = ("Leg Configuration Tool")
   { Label1 Label
     MoveScaled(1,1,25,5)
     Text = ("Servos on leg")
@@ -29,19 +29,20 @@
     MoveScaled(16,16,20,4)
   }
   { ForwardBackward Slider
-    MoveScaled(2,70,124,7)
+    MoveScaled(2,70,112,7)
     Background = Color.TooltipBackground
-    MaxValue = 1000
-    PageStep = 1
+    MinValue = -500
+    MaxValue = 500
+    PageStep = 20
     Mark = True
-    Value = 500
   }
   { UpDown Slider
-    MoveScaled(128,1,10,77)
+    MoveScaled(131,10,10,67)
     Background = Color.TooltipBackground
-    MaxValue = 1000
+    MaxValue = 1400
+    PageStep = 20
     Mark = True
-    Value = 500
+    Value = 800
   }
   { Label5 Label
     MoveScaled(45,2,14,4)
@@ -56,38 +57,41 @@
     Text = ("Quit No Save")
   }
   { SetShoulderOffsetAngle Slider
-    MoveScaled(2,34,123,7)
-    MinValue = -1000
-    MaxValue = 1000
+    MoveScaled(2,38,112,7)
+    MinValue = -500
+    MaxValue = 500
+    PageStep = 1
   }
   { Label6 Label
     MoveScaled(3,65,42,4)
     Text = ("Move leg forward or back at fixed height")
   }
   { Label7 Label
-    MoveScaled(2,30,85,4)
-    Text = ("Set Shoulder Offset Angle, All Setting are + or Minus  0-1000 sero angle ticks")
+    MoveScaled(2,36,74,4)
+    Text = ("Set Shoulder Offset Angle, All Setting are + or Minus 500 angle ticks .024 deg")
   }
   { UpperLegOffsetAngleAdjust Slider
-    MoveScaled(2,45,123,6)
-    MinValue = -1000
-    MaxValue = 1000
+    MoveScaled(2,49,112,6)
+    MinValue = -500
+    MaxValue = 500
+    PageStep = 1
   }
   { Label8 Label
-    MoveScaled(2,41,28,3)
+    MoveScaled(2,45,28,3)
     Text = ("Set Upper Leg Offset Angle")
   }
   { LowerLegOffsetAngleAdjust Slider
-    MoveScaled(2,54,123,6)
-    MinValue = -1000
-    MaxValue = 1000
+    MoveScaled(2,58,112,6)
+    MinValue = -500
+    MaxValue = 500
+    PageStep = 1
   }
   { LoadServoSettings Button
     MoveScaled(76,11,16,6)
     Text = ("Load Settings")
   }
   { Label9 Label
-    MoveScaled(2,51,31,3)
+    MoveScaled(2,55,31,3)
     Text = ("Set Lower Leg offset Angle")
   }
   { LegName ComboBox
@@ -96,5 +100,85 @@
   { MoveToZero Button
     MoveScaled(45,12,24,4)
     Text = ("Move To Zero Point")
+  }
+  { DelLeg Button
+    MoveScaled(94,11,18,6)
+    Text = ("Delete")
+  }
+  { ShoulderOffset TextBox
+    MoveScaled(115,39,12,4)
+    Alignment = Align.Right
+  }
+  { UpperLegOffset TextBox
+    MoveScaled(115,50,12,4)
+    Alignment = Align.Right
+  }
+  { LowerLegOffset TextBox
+    MoveScaled(115,59,12,4)
+    Alignment = Align.Right
+  }
+  { HorizontalPosition TextBox
+    MoveScaled(115,71,12,4)
+    Alignment = Align.Right
+  }
+  { VerticalPosition TextBox
+    MoveScaled(129,5,14,4)
+    Alignment = Align.Center
+  }
+  { TextLabel1 TextLabel
+    MoveScaled(121,1,24,6)
+    Text = ("Raise or Lower The Leg")
+  }
+  { Panel1 Panel
+    MoveScaled(2,21,122,11)
+    { Label10 Label
+      MoveScaled(2,1,24,8)
+      Text = ("Define Leg Segment \nLengths in Milimeters")
+    }
+    { Label11 Label
+      MoveScaled(27,0,9,5)
+      Text = ("Upper")
+    }
+    { UpperLength TextBox
+      MoveScaled(37,0,14,5)
+    }
+    { Label12 Label
+      MoveScaled(27,5,8,5)
+      Text = ("Lower")
+    }
+    { LowerLength TextBox
+      MoveScaled(37,6,14,5)
+    }
+    { Label13 Label
+      MoveScaled(56,6,14,5)
+      Text = ("Max Height")
+    }
+    { MaxHeight TextBox
+      MoveScaled(69,6,14,5)
+      ReadOnly = True
+    }
+    { Label14 Label
+      MoveScaled(56,0,12,5)
+      Text = ("Min Height")
+    }
+    { MinHeight TextBox
+      MoveScaled(69,0,14,5)
+    }
+    { Label15 Label
+      MoveScaled(84,0,19,5)
+      Text = ("Knee To Ground")
+    }
+    { KneeToGround TextBox
+      MoveScaled(105,0,13,5)
+      ReadOnly = True
+    }
+    { Label16 Label
+      MoveScaled(84,7,19,4)
+      Text = ("Shoulder To Ground")
+    }
+    { ShoulderToGround TextBox
+      MoveScaled(105,7,13,4)
+      ReadOnly = True
+    }
   }
 }

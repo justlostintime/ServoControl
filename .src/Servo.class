@@ -139,6 +139,7 @@ Public SERVO_LED_ERROR_READ_MSG As Byte[] = [85, 85, 0, 4, 36, 0, 0]
 Public Sub mytimer_Timer()
   
   SERVO_POS_READ()
+  If IoTrace Then Print "Servo being polled index =", IoPortIndex, " ID = ", ServoId
   
 End
 
@@ -164,6 +165,9 @@ End
 
 Public Sub BeginPolling()
   
+  If IoTrace Then
+    Print Now, "Begin Polling ID = ", ServoId
+  Endif
   Polling.Delay = PollingTime      ' lets start polling this device
   If Not (ServoId = 254) Then Polling.Enabled = True
   
@@ -385,7 +389,7 @@ End
 
 Public Sub SERVO_ANGLE_OFFSET_READ()
   
-  SendCommand(SERVO_ANGLE_OFFSET_READ_DATA)
+  SendCommand(SERVO_ANGLE_OFFSET_READ_DATA, True, IoTimeOut)
   
 End
 
@@ -539,6 +543,13 @@ Public Sub OpenServo(GetReadEventsRequest As Boolean)
    
   
 End
+
+Public Sub MOVE_HOME_WAIT_TIMED(TheTime As Integer)
+  
+  SERVO_MOVE_TIME_WAIT_WRITE_int(HomePosition, TheTime)
+  
+End
+
 
 Public Sub CloseServo()
   

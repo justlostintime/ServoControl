@@ -11,7 +11,7 @@ Public IoMgr As IoManager
 
 Public Servos As Servo[] 
 
-Public IoTrace As Boolean = True
+Public IoTrace As Boolean = False
 
 Event Notice(msg As Integer, id As Byte, buffer As Byte[], RxTime As Float)
 Event Read(TheServo As Servo, id As Integer, cmd As Integer, buffer As Byte[], RxTime As Float, TxTime As Float)
@@ -64,7 +64,11 @@ End
 
 Public Sub _new(IoPorts As String[])
   
-  If IoTrace Then Print Now, "ServoManager Connecting to port " & IoPorts
+  If IoTrace Then
+     For Each i As String In IoPorts
+      Print Now, "ServoManager Connecting to port/Ports " & i
+     Next
+  Endif
   
   IoMgr = New IoManager(IoPorts) As "MyIo"
   
@@ -108,7 +112,7 @@ Public Sub HomeServos()
   If IoTrace Then Print Now, "Begin Homing of Servos\n"
 
   For i As Integer = 1 To MaxServos - 1 ' 1 is reserved for new servos 0 is reserved for broadcast servers
-  If Not IsNull(Servos[i]) Then Servos[i].SERVO_MOVE_TIME_WAIT_WRITE_int(Servos[i].HomePosition, 300)
+  If Not IsNull(Servos[i]) Then Servos[i].MOVE_HOME_WAIT_TIMED(300)
   Next
   
   Servos[0].SERVO_MOVE_START()
@@ -124,7 +128,7 @@ Public Sub SendCommandRaw(IoPortIndex As Integer, TheCmd As Byte[])
   
 End
 
-Public Sub MyIo_Read(id As Integer, Len As Integer, theMessage As Byte[], RxTime1 As Float, TxTime1 As Float)
+Public Sub MyIo_Read(IoPortIndex As Integer, id As Integer, Len As Integer, theMessage As Byte[], RxTime1 As Float, TxTime1 As Float)
  Dim cmd As Integer
  
  IoMgr.Logger("", "<-Rx SMgr Len=" & Len & " : ", theMessage)
@@ -139,9 +143,9 @@ Public Sub MyIo_Read(id As Integer, Len As Integer, theMessage As Byte[], RxTime
  Select Case cmd
    Case 14
      If IsNull(Servos[id]) Then
-       Servos[id] = New Servo(id, IoMgr)
+       Servos[id] = New Servo(id, IoMgr, IoPortindex)
        Servos[id].IoTraceSet(IoTrace)
-       Print Now, "<> added Servo " & id
+       If IoTrace Then Print Now, "<> added Servo " & id
        Raise Notice(NewServo, id, theMessage, RxTime1)
      Else
        If Servos[id].receivedMessage(theMessage, RxTime1) Then
@@ -197,4 +201,12 @@ Public Sub GetServoCollection() As Servo[]
   Return MyServos
 End
 
+Public Sub _get(id As Integer) As Servo
+  If id < servos.length Then
+    Return Servos[id]
+  Else 
+    Return Null
+  Endif
+  
+End
 
