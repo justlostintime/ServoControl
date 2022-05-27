@@ -4,30 +4,30 @@ Public TheLeg As Leg = New Leg
 
 Public LegProfiles As Settings
 
-
 Public Sub Form_Open()
-Dim Names As String
+
+  Dim Names As String
 
   If Not Exist(System.User.Home & "/Robots") Then
     Mkdir System.User.Home & "/Robots"
   Endif
-  
+
   LegProfiles = New Settings(System.User.Home & "/Robots/legsets.conf")
-  
+
   names = LegProfiles["LegNames", "Basic"]
   If Not IsNull(names) Then
     LegName.list = Split(names, "|,")
     LegName.index = 0
   Endif
-  
+
   ShoulderServo.List = FMain.CurrentServo.List
-  
+
   UpperServo.list = FMain.CurrentServo.List
-  
+
   LowerServo.list = FMain.CurrentServo.List
-  
+
   TheLeg.ServoBroadcast = FMain.SrvManager.OpenServo(0)
-  
+
   DisplayAllInfo()
 
 End
@@ -37,38 +37,37 @@ Public Sub DisplayAllInfo()
   If Not IsNull(TheLeg.ServoShoulder) Then ShoulderServo.index = ShoulderServo.Find(Str(TheLeg.ServoShoulder.ServoId))
   If Not IsNull(TheLeg.ServoUpper) Then UpperServo.Index = UpperServo.Find(Str(TheLeg.ServoUpper.ServoId))
   If Not IsNull(TheLeg.ServoLower) Then LowerServo.Index = LowerServo.Find(Str(TheLeg.ServoLower.ServoId))
-  
+
   HorizontalPosition.text = ForwardBackward.value
   VerticalPosition.text = TheLeg.DistanceToGround
   UpDown.value = TheLeg.DistanceToGround
   ShoulderToGround.text = TheLeg.DistanceToGround
   KneeToGround.text = TheLeg.DistanceFromKneeToGround
-  
+
   SetShoulderOffsetAngle.value = TheLeg.ShoulderOffset
   ShoulderOffset.text = TheLeg.ShoulderOffset
   UpperLegOffsetAngleAdjust.value = TheLeg.LegUpperOffset
   UpperLegOffset.text = TheLeg.LegUpperOffset
   LowerLegOffsetAngleAdjust.value = TheLeg.LegLowerOffset
   LowerLegOffset.text = TheLeg.LegLowerOffset
-  
+
   UpperLength.text = TheLeg.legUpperLen
   LowerLength.text = TheLeg.legLowerLen
-  
+
   MinHeight.text = TheLeg.MinDistanceSupported
-  MaxHeight.text = TheLeg.MaxDistanceSupported 
-  
+  MaxHeight.text = TheLeg.MaxDistanceSupported
+
   Me.Refresh()
   Wait
-  
-End
 
+End
 
 Public Sub ShoulderServo_Click()
 
   TheLeg.ServoShoulder = FMain.SrvManager.OpenServo(Val(ShoulderServo.text))
   TheLeg.ShoulderAngle = TheLeg.ServoShoulder.HomePosition
   DisplayAllInfo()
-  
+
 End
 
 Public Sub UpperServo_Click()
@@ -76,15 +75,15 @@ Public Sub UpperServo_Click()
   TheLeg.ServoUpper = FMain.SrvManager.OpenServo(Val(UpperServo.text))
   TheLeg.UpperAngle = TheLeg.ServoUpper.HomePosition
   DisplayAllInfo()
-  
+
 End
 
 Public Sub LowerServo_Click()
 
-   TheLeg.ServoLower = FMain.SrvManager.OpenServo(Val(LowerServo.text))
-   TheLeg.LowerAngle = TheLeg.ServoLower.HomePosition
-   DisplayAllInfo()
-   
+  TheLeg.ServoLower = FMain.SrvManager.OpenServo(Val(LowerServo.text))
+  TheLeg.LowerAngle = TheLeg.ServoLower.HomePosition
+  DisplayAllInfo()
+
 End
 
 Public Sub UpDown_Change()
@@ -102,16 +101,16 @@ Public Sub ForwardBackward_Change()
   HorizontalPosition.text = ForwardBackward.value
   Wait
   TheLeg.MoveToPosition()
+
 End
 
 Public Sub SetShoulderOffsetAngle_Change()
 
-  
   TheLeg.ShoulderOffset = SetShoulderOffsetAngle.Value
   Print "Shoulder Offset Angle = ", TheLeg.ShoulderOffset
   ShoulderOffset.text = SetShoulderOffsetAngle.Value
   Wait
-  
+
   TheLeg.MoveAdjust()
 
 End
@@ -122,81 +121,83 @@ Public Sub UpperLegOffsetAngleAdjust_Change()
   UpperLegOffset.text = UpperLegOffsetAngleAdjust.Value
   Wait
   TheLeg.MoveAdjust()
+
 End
 
 Public Sub LowerLegOffsetAngleAdjust_Change()
 
-   TheLeg.LegLowerOffset = LowerLegOffsetAngleAdjust.Value
-   LowerLegOffset.text = LowerLegOffsetAngleAdjust.Value
-   Wait
-   TheLeg.MoveAdjust()
+  TheLeg.LegLowerOffset = LowerLegOffsetAngleAdjust.Value
+  LowerLegOffset.text = LowerLegOffsetAngleAdjust.Value
+  Wait
+  TheLeg.MoveAdjust()
+
 End
 
 Public Sub SaveServoSettings_Click()
-' Dim Names As String
-' Dim LegNames As String[] 
-' 
-' 
-'   names = LegProfiles["LegNames"]
-'   
-'   Legnames = Split(names, "|,")
-'   
-'   If LegNames.Find(LegName.text) = -1 Then
-'     names = names & LegName.text & "|"
-'     LegProfiles["LegNames"] = names
-'     LegProfiles.Save()
-'   Endif
-'   
-'   LegProfiles["Leg" & LegName.text & "/ShoulderServoID"] = TheLeg.ServoShoulder.ServoID
-'   LegProfiles["Leg" & LegName.text & "/UpperServoID"] = TheLeg.ServoUpper.ServoID
-'   LegProfiles["Leg" & LegName.text & "/LowerServoID"] = TheLeg.ServoLower.ServoID
-'   
-'   
-' 
-'   LegProfiles["Leg" & LegName.text & "/ShoulderAngleOffset"] = TheLeg.ShoulderOffset
-'   LegProfiles["Leg" & LegName.text & "/UpperAngleOffset"] = TheLeg.LegUpperOffset
-'   LegProfiles["Leg" & LegName.text & "/LowerAngleOffset"] = TheLeg.LegLowerOffset
-'   
-'   LegProfiles["Leg" & LegName.text & "/MaxAngleAtDistanceToGround"] = TheLeg.MaxAngleAtDistanceToGround
-'   LegProfiles["Leg" & LegName.text & "/MaxDistanceSupported"] = TheLeg.MaxDistanceSupported
-'   LegProfiles["Leg" & LegName.text & "/MinDistanceSupported"] = TheLeg.MinDistanceSupported
-'   
-'   
-'   LegProfiles["Leg" & LegName.text & "/DistanceToGround"] = TheLeg.DistanceToGround
-'   LegProfiles["Leg" & LegName.text & "/LegUpperLen"] = TheLeg.legUpperLen
-'   LegProfiles["Leg" & LegName.text & "/LegLowerLen"] = TheLeg.legLowerLen
-'   
-'   LegProfiles.Save()
+  ' Dim Names As String
+  ' Dim LegNames As String[]
+  '
+  '
+  '   names = LegProfiles["LegNames"]
+  '
+  '   Legnames = Split(names, "|,")
+  '
+  '   If LegNames.Find(LegName.text) = -1 Then
+  '     names = names & LegName.text & "|"
+  '     LegProfiles["LegNames"] = names
+  '     LegProfiles.Save()
+  '   Endif
+  '
+  '   LegProfiles["Leg" & LegName.text & "/ShoulderServoID"] = TheLeg.ServoShoulder.ServoID
+  '   LegProfiles["Leg" & LegName.text & "/UpperServoID"] = TheLeg.ServoUpper.ServoID
+  '   LegProfiles["Leg" & LegName.text & "/LowerServoID"] = TheLeg.ServoLower.ServoID
+  '
+  '
+  '
+  '   LegProfiles["Leg" & LegName.text & "/ShoulderAngleOffset"] = TheLeg.ShoulderOffset
+  '   LegProfiles["Leg" & LegName.text & "/UpperAngleOffset"] = TheLeg.LegUpperOffset
+  '   LegProfiles["Leg" & LegName.text & "/LowerAngleOffset"] = TheLeg.LegLowerOffset
+  '
+  '   LegProfiles["Leg" & LegName.text & "/MaxAngleAtDistanceToGround"] = TheLeg.MaxAngleAtDistanceToGround
+  '   LegProfiles["Leg" & LegName.text & "/MaxDistanceSupported"] = TheLeg.MaxDistanceSupported
+  '   LegProfiles["Leg" & LegName.text & "/MinDistanceSupported"] = TheLeg.MinDistanceSupported
+  '
+  '
+  '   LegProfiles["Leg" & LegName.text & "/DistanceToGround"] = TheLeg.DistanceToGround
+  '   LegProfiles["Leg" & LegName.text & "/LegUpperLen"] = TheLeg.legUpperLen
+  '   LegProfiles["Leg" & LegName.text & "/LegLowerLen"] = TheLeg.legLowerLen
+  '
+  '   LegProfiles.Save()
 
-    TheLeg.Save(LegProfiles, LegName.text)
+  TheLeg.Save(LegProfiles, LegName.text)
 
 End
 
 Public Sub LoadServoSettings_Click()
-  
+
   ' TheLeg.ServoShoulder = FMain.SrvManager.OpenServo(LegProfiles["Leg" & LegName.text & "/ShoulderServoID"])
   ' TheLeg.ServoUpper = FMain.SrvManager.OpenServo(LegProfiles["Leg" & LegName.text & "/UpperServoID"])
   ' TheLeg.ServoLower = FMain.SrvManager.OpenServo(LegProfiles["Leg" & LegName.text & "/LowerServoID"])
-  ' 
+  '
   ' TheLeg.MaxAngleAtDistanceToGround = LegProfiles["Leg" & LegName.text & "/MaxAngleAtDistanceToGround", 60.00]
-  ' 
+  '
   ' TheLeg.legUpperLen = LegProfiles["Leg" & LegName.text & "/LegUpperLen"]
   ' TheLeg.legLowerLen = LegProfiles["Leg" & LegName.text & "/LegLowerLen"]
   ' TheLeg.MaxDistanceSupported = LegProfiles["Leg" & LegName.text & "/MaxDistanceSupported", TheLeg.legUpperLen + TheLeg.legLowerLen]
   ' TheLeg.MinDistanceSupported = LegProfiles["Leg" & LegName.text & "/MinDistanceSupported", 60.00]
-  ' 
-  ' 
+  '
+  '
   ' TheLeg.ShoulderOffset = LegProfiles["Leg" & LegName.text & "/ShoulderAngleOffset"]
   ' TheLeg.LegUpperOffset = LegProfiles["Leg" & LegName.text & "/UpperAngleOffset"]
   ' TheLeg.LegLowerOffset = LegProfiles["Leg" & LegName.text & "/LowerAngleOffset"]
   ' TheLeg.DistanceToGround = LegProfiles["Leg" & LegName.text & "/DistanceToGround"]
-  
+
   TheLeg.Load(LegProfiles, LegName.Text)
-  
+
   ForwardBackward.value = 0
-  
+
   DisplayAllInfo()
-  
+
 End
 
 Public Sub MoveToZero_Click()
@@ -208,27 +209,26 @@ Public Sub MoveToZero_Click()
 End
 
 Public Sub DelLeg_Click()
-Dim Names, tName As String
-Dim LegNames As String[] 
-Dim LegIndex As Integer
 
+  Dim Names, tName As String
+  Dim LegNames As String[]
+  Dim LegIndex As Integer
 
   names = LegProfiles["LegNames"]
-  
+
   Legnames = Split(names, "|,")
   LegIndex = LegNames.Find(LegName.text)
-  
+
   If LegIndex = -1 Then Return
-  
+
   LegNames.Delete(LegIndex)
-    
+
   For Each tName In LegNames
     names = tName & "|"
   Next
-  
+
   LegProfiles.Clear("Leg" & LegName.text)
   LegProfiles["LegNames"] = names
-  
 
 End
 
@@ -239,10 +239,10 @@ Public Sub QUITnOsAVE_Click()
 End
 
 Public Sub SetMaxHeight()
-  
-    TheLeg.MaxDistanceSupported = TheLeg.legUpperLen + TheLeg.legLowerLen
-    MaxHeight.text = TheLeg.MaxDistanceSupported
-    
+
+  TheLeg.MaxDistanceSupported = TheLeg.legUpperLen + TheLeg.legLowerLen
+  MaxHeight.text = TheLeg.MaxDistanceSupported
+
 End
 
 Public Sub MinHeight_Change()
@@ -255,14 +255,14 @@ Public Sub UpperLength_Change()
 
   TheLeg.legUpperLen = Val(UpperLength.text)
   SetMaxHeight()
-    
+
 End
 
 Public Sub LowerLength_Change()
- 
+
   TheLeg.legLowerLen = Val(LowerLength.text)
   SetMaxHeight()
-  
+
 End
 
 Public Sub ShoulderOffset_Change()
@@ -270,7 +270,6 @@ Public Sub ShoulderOffset_Change()
   SetShoulderOffsetAngle.value = Val(ShoulderOffset.text)
 
 End
-
 
 Public Sub UpperLegOffset_Change()
 

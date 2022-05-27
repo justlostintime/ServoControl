@@ -1,60 +1,55 @@
 ' Gambas class file
 
-
 Private MyServos As ServoManager
 Private pc As Integer = 0
 Private stack As Collection = New Collection
 Private SymbolTable As Collection = New Collection
 Private Program As String[] = New String[]
 
-
 Public Sub _new(ProgramSource As String, SrvManager As ServoManager)
-  
+
   MyServos = SrvManager
-  
-  
+
 End
 
 Private Sub Compiler(Source As String)
- Dim s As String[]
- Dim e As String
- 
- s = Split(Source, "\n", "", True)
- For i As Integer = 0 To s.length - 1 ' remove all comments
-   s[i] = Highlight.Purge(s[i])
- Next
- 
- For Each e In s
-   Highlight.Analyze(e)
-   Select Case highlight.Types[0]
-     Case Highlight.Keyword
-       'ff
-       Print "Keyword", Highlight.Symbol, "\n"
-       
-     Case Highlight.Label
-       'dd
+
+  Dim s As String[]
+  Dim e As String
+
+  s = Split(Source, "\n", "", True)
+  For i As Integer = 0 To s.length - 1 ' remove all comments
+    s[i] = Highlight.Purge(s[i])
+  Next
+
+  For Each e In s
+    Highlight.Analyze(e)
+    Select Case highlight.Types[0]
+      Case Highlight.Keyword
+        'ff
+        Print "Keyword", Highlight.Symbol, "\n"
+
+      Case Highlight.Label
+        'dd
         Print "Label", Highlight.Symbol, "\n"
-        
-     Case Highlight.Number
-       'hh
+
+      Case Highlight.Number
+        'hh
         Print "Number", Highlight.Symbol, "\n"
-        
-     Case Highlight.Operator
-       'pp
+
+      Case Highlight.Operator
+        'pp
         Print "Operator", Highlight.Symbol, "\n"
-        
-     Case Highlight.String
-       'jj
+
+      Case Highlight.String
+        'jj
         Print "String", Highlight.Symbol, "\n"
-        
-     Case Highlight.Symbol
+
+      Case Highlight.Symbol
         Print "Symbol", Highlight.Symbol, "\n"
-        
-   End Select
-   
- Next
-  
+
+    End Select
+
+  Next
+
 End
-
-
-

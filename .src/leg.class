@@ -22,7 +22,6 @@ Public ShoulderAngle As Integer = 0                                 ' current an
 Public UpperAngle As Integer = 0                                    ' angle of leg at hip forward or backwards
 Public LowerAngle As Integer = 0                                    ' angle at knee forwards or backwards
 
-
 Public ServoUpper As Servo
 Public ServoLower As Servo
 Public ServoShoulder As Servo
@@ -32,20 +31,19 @@ Public Const MovementSpeed As Integer = 500
 
 Public MyName As String = ""
 
-
-
 Public Sub CalcLegPos()
   ' using SSS formula for side as angles
-  Dim KneeAngle As Float 
+
+  Dim KneeAngle As Float
   Dim AnkleAngle As Float
-  
+
   Print "Requested Distance to Ground :" & DistanceToGround & "\n"
-  
+
   If DistanceToGround > MaxDistanceSupported Then DistanceToGround = MaxDistanceSupported ' limit stupid requests
   If DistanceToGround < MinDistanceSupported Then DistanceToGround = MinDistanceSupported ' Min and Max
-  
-   Print "Actual Distance to Ground Adjusted:" & DistanceToGround & "\n"
-  
+
+  Print "Actual Distance to Ground Adjusted:" & DistanceToGround & "\n"
+
   KneeAngle = Deg(ACos((legLowerLen ^ 2 + legUpperLen ^ 2 - DistanceToGround ^ 2) / (2 * LegLowerLen * LegUpperLen)))
   Print "The New Knee Angle is :" & KneeAngle & "\n"
   UpperAngle = Deg(ACos((DistanceToGround ^ 2 + LegUpperLen ^ 2 - LegLowerLen ^ 2) / (2 * LegUpperLen * DistanceToGround)))
@@ -54,167 +52,157 @@ Public Sub CalcLegPos()
   Print "The New Ankle angle is :" & AnkleAngle & "\n"
   LowerAngle = 180 - KneeAngle
   Print "The New Knee Joint angle :" & LowerAngle & "\n"
-  
-  
+
 End
 
 Public Sub Save(LegProfiles As Settings, Optional LegName As String = MyName)
-  
-Dim Names As String
-Dim LegNames As String[] 
 
-   If MyName = "" Then 
-      If LegName = "" Then
-        LegName = "Leg" & Str(ServoLower.ServoId) & "+" & Str(ServoUpper.ServoId) & "+" & Str(ServoLower.ServoId) & "AUTO"
-        MyName = LegName
-      Else
-        MyName = LegName
-      Endif
-         
-   Endif 
-  
+  Dim Names As String
+  Dim LegNames As String[]
+
+  If MyName = "" Then
+    If LegName = "" Then
+      LegName = "Leg" & Str(ServoLower.ServoId) & "+" & Str(ServoUpper.ServoId) & "+" & Str(ServoLower.ServoId) & "AUTO"
+      MyName = LegName
+    Else
+      MyName = LegName
+    Endif
+
+  Endif
+
   names = LegProfiles["LegNames"]
-  
+
   Legnames = Split(names, "|,")
-  
+
   If LegNames.Find(LegName) = -1 Then
     names = names & LegName & "|"
     LegProfiles["LegNames"] = names
     LegProfiles.Save()
   Endif
-  
+
   LegProfiles["Leg" & LegName.text & "/ShoulderServoID"] = ServoShoulder.ServoID
   LegProfiles["Leg" & LegName.text & "/UpperServoID"] = ServoUpper.ServoID
   LegProfiles["Leg" & LegName.text & "/LowerServoID"] = ServoLower.ServoID
-  
-  
 
   LegProfiles["Leg" & LegName.text & "/ShoulderAngleOffset"] = ShoulderOffset
   LegProfiles["Leg" & LegName.text & "/UpperAngleOffset"] = LegUpperOffset
   LegProfiles["Leg" & LegName.text & "/LowerAngleOffset"] = LegLowerOffset
-  
+
   LegProfiles["Leg" & LegName.text & "/MaxAngleAtDistanceToGround"] = MaxAngleAtDistanceToGround
   LegProfiles["Leg" & LegName.text & "/MaxDistanceSupported"] = MaxDistanceSupported
   LegProfiles["Leg" & LegName.text & "/MinDistanceSupported"] = MinDistanceSupported
-  
-  
+
   LegProfiles["Leg" & LegName.text & "/DistanceToGround"] = DistanceToGround
   LegProfiles["Leg" & LegName.text & "/LegUpperLen"] = legUpperLen
   LegProfiles["Leg" & LegName.text & "/LegLowerLen"] = legLowerLen
-  
+
   LegProfiles.Save()
-  
+
 End
 
 Public Sub Load(LegProfiles As Settings, LegName As String)
-  
+
   MyName = LegName
-  
+
   ServoShoulder = FMain.SrvManager.OpenServo(LegProfiles["Leg" & LegName & "/ShoulderServoID"])
   ServoUpper = FMain.SrvManager.OpenServo(LegProfiles["Leg" & LegName & "/UpperServoID"])
   ServoLower = FMain.SrvManager.OpenServo(LegProfiles["Leg" & LegName & "/LowerServoID"])
- 
+
   MaxAngleAtDistanceToGround = LegProfiles["Leg" & LegName & "/MaxAngleAtDistanceToGround", 60.00]
-  
+
   legUpperLen = LegProfiles["Leg" & LegName & "/LegUpperLen"]
   legLowerLen = LegProfiles["Leg" & LegName & "/LegLowerLen"]
   MaxDistanceSupported = LegProfiles["Leg" & LegName & "/MaxDistanceSupported", legUpperLen + legLowerLen]
   MinDistanceSupported = LegProfiles["Leg" & LegName & "/MinDistanceSupported", 60.00]
-  
-  
+
   ShoulderOffset = LegProfiles["Leg" & LegName & "/ShoulderAngleOffset"]
   LegUpperOffset = LegProfiles["Leg" & LegName & "/UpperAngleOffset"]
   LegLowerOffset = LegProfiles["Leg" & LegName & "/LowerAngleOffset"]
-  
+
 End
 
-
-
 Public Sub MoveToPosition()
+
   Dim lower, shoulder, upper As Integer
-  
+
   Return
-  
+
   CalcLegPos()
-  
+
   upper = LegUpperOffset + UpperAngle
   lower = LegLowerOffset + LowerAngle
   shoulder = ShoulderOffset + ShoulderAngle
-  
+
   Print "Move to distance Upr, lowr,shoulder:", upper, lower, shoulder, "\n"
   Wait
-  
+
   timedmove(lower, upper, shoulder)
-  
-  
+
 End
 
 Public Sub MoveToZeroPosition()
-  
+
   settozero()
-  
+
   Print "Move Zero Point \n"
   Wait
-  
+
   timedmove(LowerAngle, UpperAngle, ShoulderAngle, 2000)
-  
+
 End
 
 Public Sub MoveAdjust() ' remember that each tick is 0.024 degrees
+
   Dim lower, shoulder, upper As Integer
-  
+
   upper = LegUpperOffset + UpperAngle
   lower = LegLowerOffset + LowerAngle
   shoulder = ShoulderOffset + ShoulderAngle
-  
+
   Print "Move to distance Upper, lower,shoulder:", upper, lower, Shoulder, "\n"
   Wait
-  
+
   timedmove(lower, upper, shoulder)
 
-  
 End
 
 Public Sub settozero()
+
   Dim lower, shoulder, upper As Integer
+
   upper = ServoUpper.ZeroPointOffset + ServoUpper.HomePosition + LegUpperOffset
   lower = ServoLower.ZeroPointOffset + ServoLower.HomePosition + LegLowerOffset
   shoulder = ServoShoulder.ZeroPointOffset + ServoShoulder.HomePosition + ShoulderOffset
-  
+
   LowerAngle = ServoUpper.ZeroPointOffset + ServoUpper.HomePosition
   UpperAngle = ServoLower.ZeroPointOffset + ServoLower.HomePosition
   ShoulderAngle = ServoShoulder.ZeroPointOffset + ServoShoulder.HomePosition
   DistanceToGround = MaxDistanceSupported
-   
-   Print "Set to Zero Point : Upper,Lower,Shoulder,toGround :", upper, lower, shoulder, DistanceToGround, "\n"
+
+  Print "Set to Zero Point : Upper,Lower,Shoulder,toGround :", upper, lower, shoulder, DistanceToGround, "\n"
+
 End
 
-
 Public Sub timedmove(lower As Integer, upper As Integer, shoulder As Integer, Optional timetotarget As Integer = MovementSpeed)
-  
+
   ServoUpper.SERVO_MOVE_TIME_WAIT_WRITE_int(upper, timetotarget)
   ServoLower.SERVO_MOVE_TIME_WAIT_WRITE_int(lower, timetotarget)
   ServoShoulder.SERVO_MOVE_TIME_WAIT_WRITE_int(shoulder, timetotarget)
-  
+
   ServoBroadcast.SERVO_MOVE_START()
-  
+
 End
 
 Public Sub nextposition(lower As Integer, upper As Integer, shoulder As Integer, Optional timetotarget As Integer = MovementSpeed)
-  
+
   ServoUpper.SERVO_MOVE_TIME_WAIT_WRITE_int(upper, timetotarget)
   ServoLower.SERVO_MOVE_TIME_WAIT_WRITE_int(lower, timetotarget)
   ServoShoulder.SERVO_MOVE_TIME_WAIT_WRITE_int(shoulder, timetotarget)
-  
+
 End
 
 Public Sub beginmove()
-  
+
   ServoBroadcast.SERVO_MOVE_START()
-  
+
 End
-
-
-
-
-

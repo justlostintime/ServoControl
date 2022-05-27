@@ -10,14 +10,12 @@ Public RxTime As Float
 Public TxTime As Float
 Public IoPort As Integer
 
-
-
 Public Sub _new(IdPort As Integer, iWaiting As Boolean, theCmd As Byte[], tOut As Integer, Optional MsgTime As Float = Now)
-  
+
   Waiting = iWaiting
   Buffer = theCmd
   TimeOut = tOut
   TxTime = MsgTime
   IoPort = IdPort
-  
+
 End

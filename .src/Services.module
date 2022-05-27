@@ -3,15 +3,9 @@
 Public MyBuffer As Buffer
 
 Public Sub main()
-  
-  SharedMem.begin(1000000)
-  
 
-  
-  
-  
+  SharedMem.begin(1000000)
+
   SharedMem.End()
-  
-  
-  
+
 End
