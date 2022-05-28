@@ -1,0 +1,17 @@
+' Gambas module file
+
+Public Sub _Call(msghdr As String, BufferHdr As String, buffer As Byte[], Optional ID As Integer = -1)
+
+  Dim inByte As Byte
+  Dim inData As String
+
+  If FMain.IoTrace Then
+    If Not (msghdr = "") Then Print Subst(Msghdr, id) & "\n"
+    inData = Now & "-" & BufferHdr
+    For Each inByte In buffer
+      inData &= Hex(inbyte, 2) & " "
+    Next
+    Print inData & "\n"
+  Endif
+
+End

@@ -68,7 +68,7 @@ Public Sub GetMessageFromQ() As Byte[]
   For Each ReadQueue In ReadQueues
 
     If ReadQueue.length = 0 Then
-      If IoTrace Then Print Now, "Q Is Empty Return Null\n"
+      If IoTrace Then Debug "Q Is Empty Return Null\n"
       Inc IoIndex
       Continue
     Endif
@@ -76,14 +76,14 @@ Public Sub GetMessageFromQ() As Byte[]
     While ReadQueue[0] <> 85    ' Remove any  junk from stream
       ReadQueue.Remove(0)
       If ReadQueue.length = 0 Then
-        If IoTrace Then Print Now, "Q Begins with bad header Return NULL"
+        If IoTrace Then Debug "Q Begins with bad header Return NULL"
         Inc IoIndex
         Continue
       Endif
     Wend
 
     If ReadQueue.length < 7 Then
-      If IoTrace Then Print Now, "Incomplete Message encountered"
+      If IoTrace Then Debug "Incomplete Message encountered"
       Inc IoIndex
       Continue
     Else
@@ -91,7 +91,7 @@ Public Sub GetMessageFromQ() As Byte[]
         If ReadQueue.length < 7 Then Return Null  ' we did not get the whole message
         len = ReadQueue[Servo.LenOffset] + 3     ' length of the whole message we are after
         If len > 10 Or len < 7 Then
-          If IoTrace Then Print Now, "Found Good Header but bad body calling self Getmessage"
+          If IoTrace Then Debug "Found Good Header but bad body calling self Getmessage"
           ReadQueue.remove(0, 2)
           Return GetMessagefromQ()
         Else
@@ -100,12 +100,12 @@ Public Sub GetMessageFromQ() As Byte[]
         Endif
       Else
         ReadQueue.Remove(0, 2)
-        If IoTrace Then Print Now, "Found junk calling self GetMessageFromQ"
+        If IoTrace Then Debug "Found junk calling self GetMessageFromQ"
         Return GetMessagefromQ()  ' very bad form..... oh well
       Endif
     Endif
 
-    If IoTrace Then Print Now, "Q Iobuf returned with good value"
+    If IoTrace Then Debug "Q Iobuf returned with good value"
     Return IoBuf
 
   Next
@@ -113,7 +113,7 @@ Public Sub GetMessageFromQ() As Byte[]
   Return Null
 
 Catch
-  Print "GetMessagefromQ crash " & Error.text, Error.where, Error.Code, "\n"
-  Print "to"
+  Debug "GetMessagefromQ crash ";; Error.text;; Error.where;; Error.Code, "\n"
+  'Debug "to"
 
 End

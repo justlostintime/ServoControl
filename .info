@@ -45,6 +45,10 @@ Broadcast
 C
 i
 -1
+MaxSendQueueLength
+C
+i
+300
 :Read
 :
 
@@ -65,10 +69,6 @@ IoPort_Read
 m
 
 (IfPort)SerialPort;
-Logger
-m
-
-(msghdr)s(BufferHdr)s(Buffer)Byte[];[(Id)i]
 IoPort0_Read
 m
 
@@ -105,7 +105,7 @@ writedata
 m
 
 (IoPortOut)SerialPort;(data)Byte[];
-MyTimer_Timer
+IoTimer_Timer
 m
 
 
@@ -423,7 +423,7 @@ SERVO_LED_ERROR_READ_MSG
 v
 Byte[]
 
-mytimer_Timer
+PollingTimer_Timer
 m
 
 
@@ -626,6 +626,14 @@ NewServo
 C
 i
 1
+IterateTimeOut
+C
+i
+100
+BroadcastAddress
+C
+i
+254
 IoMgr
 v
 IoManager

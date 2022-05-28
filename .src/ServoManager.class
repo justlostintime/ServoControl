@@ -4,8 +4,10 @@
 
 Export
 
-Static Public Const MaxServos As Integer = 20 ' set this to what ever you need
-Static Public Const NewServo As Integer = 1  ' Message sent when new servo is found
+Static Public Const MaxServos As Integer = 20        ' set this to what ever you need
+Static Public Const NewServo As Integer = 1          ' Message sent when new servo is found
+Static Public Const IterateTimeOut As Integer = 100  ' timeout waiting for a reply from servo
+Static Public Const BroadcastAddress As Integer = 254 ' Servo bus broadcast address
 
 Public IoMgr As IoManager
 
@@ -75,9 +77,10 @@ Public Sub _new(IoPorts As String[])
   IoMgr.IoTraceSet(IoTrace)
 
   Servos = New Servo[MaxServos]
-  Servos[0] = New Servo(254, IoMgr, -1)  ' set the 0 servo as broadcast servo
 
-  iterateServos()                    ' search for servos
+  iterateServos()                        ' search for servos
+
+  Servos[0] = New Servo(BroadcastAddress, IoMgr, -1)  ' set the 0 servo as broadcast servo
 
 End
 
@@ -85,31 +88,31 @@ Public Sub iterateServos()
 
   Dim OutPutCmd As Byte[] = [85, 85, 1, 3, 14, 0]
 
-  If IoTrace Then Print Now, "Begin Enumeration of All Servos\n"
+  If IoTrace Then Debug "Begin Enumeration of All Servos\n"
 
-  For j As Integer = 0 To IoMgr.IoPort.length - 1
+  For j As Integer = 0 To IoMgr.IoPort.Length - 1
 
-    If IoTrace Then Print Now, "Begin Enumeration of Servos for port" & Str(j) & "\n"
+    If IoTrace Then Debug "Begin Enumeration of Servos for port" & Str(j) & "\n"
 
-    For i As Byte = 1 To MaxServos ' 1 is reserved for new servos 0 is reserved for broadcast servers
+    For i As Byte = MaxServos DownTo 1  ' 1 is reserved for new servos 0 is reserved for broadcast servers
       OutPutCmd[2] = i
-      IoMgr.Logger("", "->Tx Smgr", OutPutCmd)
+      Logger("", "->Tx Smgr", OutPutCmd)
 
-      IoMgr.SendCommand(j, OutPutCmd, True, 20)
+      IoMgr.SendCommand(j, OutPutCmd, True, IterateTimeOut)
 
     Next
 
-    If IoTrace Then Print Now, "Completed Enumeration of Servos For Port " & Str(j) & "\n"
+    If IoTrace Then Debug "Completed Enumeration of Servos For Port " & Str(j) & "\n"
 
   Next
 
-  If IoTrace Then Print Now, "Completed Enumeration of All Servos\n"
+  If IoTrace Then Debug "Completed Enumeration of All Servos\n"
 
 End
 
 Public Sub HomeServos()
 
-  If IoTrace Then Print Now, "Begin Homing of Servos\n"
+  If IoTrace Then Debug "Begin Homing of Servos\n"
 
   For i As Integer = 1 To MaxServos - 1 ' 1 is reserved for new servos 0 is reserved for broadcast servers
     If Not IsNull(Servos[i]) Then Servos[i].MOVE_HOME_WAIT_TIMED(300)
@@ -117,13 +120,13 @@ Public Sub HomeServos()
 
   Servos[0].SERVO_MOVE_START()
 
-  If IoTrace Then Print Now, "Completed Homing of Servos\n"
+  If IoTrace Then Debug "Completed Homing of Servos\n"
 
 End
 
 Public Sub SendCommandRaw(IoPortIndex As Integer, TheCmd As Byte[])
 
-  IoMgr.Logger("", "->Tx SMgr Raw -", TheCmd)
+  Logger("", "->Tx SMgr Raw -", TheCmd)
   IoMgr.SendCommand(IoPortIndex, TheCmd, False)
 
 End
@@ -132,7 +135,7 @@ Public Sub MyIo_Read(IoPortIndex As Integer, id As Integer, Len As Integer, theM
 
   Dim cmd As Integer
 
-  IoMgr.Logger("", "<-Rx SMgr Len=" & Len & " : ", theMessage)
+  Logger("", "<-Rx SMgr Len=" & Len & " : ", theMessage)
 
   cmd = theMessage[Servo.CmdOffset]
 
@@ -146,7 +149,7 @@ Public Sub MyIo_Read(IoPortIndex As Integer, id As Integer, Len As Integer, theM
       If IsNull(Servos[id]) Then
         Servos[id] = New Servo(id, IoMgr, IoPortindex)
         Servos[id].IoTraceSet(IoTrace)
-        If IoTrace Then Print Now, "<> added Servo " & id
+        If IoTrace Then Debug "<> added Servo " & id
         Raise Notice(NewServo, id, theMessage, RxTime1)
       Else
         If Servos[id].receivedMessage(theMessage, RxTime1) Then
@@ -162,7 +165,7 @@ Public Sub MyIo_Read(IoPortIndex As Integer, id As Integer, Len As Integer, theM
         Endif
       Else
 
-        If IoTrace Then Print Now, "ID " & id & " is empty"
+        If IoTrace Then Debug "ID " & id & " is empty"
 
       Endif
   End Select

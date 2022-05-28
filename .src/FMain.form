@@ -23,7 +23,7 @@
   }
   { StartServos Button
     MoveScaled(2,2,14,4)
-    ToolTip = ("You Must Do This First to Connect to serial Port and Enumerate Servos")
+    ToolTip = ("You Must Do This First to Connect to serial Port and Enumerate Servos\nDont forget to select the Serial ports that you have connected the Servo\ncontroller(s) to.")
     Text = ("Start")
   }
   { ServoAssignmentPanel Panel
@@ -125,13 +125,6 @@
       MoveScaled(43,8,11,4)
       Enabled = False
     }
-    { MovingServo Slider
-      MoveScaled(16,25,52,2)
-      ToolTip = ("Move the Servo or Speed control ")
-      MaxValue = 1000
-      Mark = True
-      Value = 500
-    }
     { Panel3 Panel
       MoveScaled(2,9,12,11)
       ToolTip = ("Sets the mode of servo operation.\nIt may operate as a motor, speed controlled by the slider\nor as a servo angle controlled by the slider")
@@ -154,7 +147,7 @@
       Text = ("Check")
     }
     { !CurrentServo ComboBox
-      MoveScaled(1,3,14,4)
+      MoveScaled(1,3,14,6)
       #Public = True
       ToolTip = ("This is the list of Servos Online.\nServo zero is always the broadcast address. This will allow you to control or move all of the servos at the same time. Stop all or switch all to motor or servo mode.\n\nYou can not broadcast requests for information. this is not supported")
     }
@@ -162,18 +155,12 @@
       MoveScaled(55,3,11,4)
       Enabled = False
     }
-    { AngleOffset Slider
-      MoveScaled(17,36,34,4)
-      ToolTip = ("When You move this slider it will adjust the servo by up to 125 +or - ticks .024 degrees. This adjustment will stay until the servo is powered off. You must save the adjustment to have it written to the Servos ROM. Making it permenant.")
-      MinValue = -125
-      MaxValue = 125
-    }
     { Label3 Label
       MoveScaled(19,34,32,3)
       Text = ("Set Servo Angle Offset Adjust")
     }
     { SaveAngleOffset Button
-      MoveScaled(58,36,13,4)
+      MoveScaled(58,38,13,4)
       ToolTip = ("This will program the servo to automaticall adjust all movements")
       Text = ("Save Angle")
     }
@@ -182,19 +169,19 @@
       Text = ("Get/Set Angle Limits")
     }
     { GetAngleLimit Button
-      MoveScaled(18,47,8,3)
+      MoveScaled(18,47,8,4)
       ToolTip = ("Program the servo with min and max angles of movement. Ie stop the robot from kill its parts")
       Text = ("Get")
     }
     { SetAngleLimit Button
-      MoveScaled(27,47,7,3)
+      MoveScaled(27,47,7,4)
       Text = ("Set")
     }
     { AngleLowLimit TextBox
-      MoveScaled(38,47,12,3)
+      MoveScaled(38,47,12,4)
     }
     { AngleHighLimit TextBox
-      MoveScaled(52,47,11,3)
+      MoveScaled(52,47,11,4)
     }
     { Label4 Label
       MoveScaled(41,43,7,3)
@@ -205,7 +192,7 @@
       Text = ("High")
     }
     { AngleOffsetNow TextBox
-      MoveScaled(52,36,6,4)
+      MoveScaled(52,38,6,4)
       Enabled = False
       Text = ("0")
     }
@@ -240,6 +227,7 @@
       MoveScaled(2,37,14,5)
       NoTabFocus = True
       Text = ("I/O Trace")
+      Value = CheckBox.True
     }
     { SetHomePosition Button
       MoveScaled(55,8,11,4)
@@ -247,16 +235,31 @@
       Text = ("Set Home")
     }
     { SetZeroPosition Button
-      MoveScaled(55,29,16,3)
+      MoveScaled(55,29,16,4)
       Tag = "This sets the offset from home that the servo will use when go zero point is called.\nThis is a software programmed and remeber zero position"
       Text = ("Set  Zero Point")
     }
     { ZeroPointValue TextBox
-      MoveScaled(43,29,11,3)
+      MoveScaled(43,29,11,4)
     }
     { Label10 Label
       MoveScaled(17,29,23,3)
       Text = ("Zero/Rest point adjust")
+    }
+    { MovingServo Slider
+      MoveScaled(16,21,52,8)
+      ToolTip = ("Move the Servo or Speed control ")
+      MaxValue = 1000
+      Orientation = ScrollBar.Horizontal
+      Mark = True
+      Value = 500
+    }
+    { AngleOffset Slider
+      MoveScaled(17,36,34,8)
+      ToolTip = ("When You move this slider it will adjust the servo by up to 125 +or - ticks .024 degrees. This adjustment will stay until the servo is powered off. You must save the adjustment to have it written to the Servos ROM. Making it permenant.")
+      MinValue = -125
+      MaxValue = 125
+      Orientation = ScrollBar.Horizontal
     }
   }
   { ClearScreen Button
@@ -269,57 +272,57 @@
     Text = ("Stop")
   }
   { Label6 Label
-    MoveScaled(2,70,46,7)
-    Text = ("Select 1 or more Io port below.  Max 5 ports\nBefore Clicking start!")
+    MoveScaled(2,70,72,7)
+    Text = ("Select 1 or more Io port(s) below.  Max 5 ports.Hold down ctrl key to \nselect more than one. Before Clicking start!")
   }
   { ServosAngles Panel
-    MoveScaled(76,47,59,24)
+    MoveScaled(77,47,59,26)
     { tTextBox1 TextBox
-      MoveScaled(3,7,12,3)
+      MoveScaled(3,7,12,4)
       ReadOnly = True
     }
     { tTextBox3 TextBox
-      MoveScaled(31,7,12,3)
+      MoveScaled(31,7,12,4)
       ReadOnly = True
     }
     { tTextBox4 TextBox
-      MoveScaled(45,7,12,3)
+      MoveScaled(45,7,12,4)
       ReadOnly = True
     }
     { tTextBox5 TextBox
-      MoveScaled(3,12,12,3)
+      MoveScaled(3,13,12,4)
       ReadOnly = True
     }
     { tTextBox6 TextBox
-      MoveScaled(17,12,12,3)
+      MoveScaled(17,13,12,4)
       ReadOnly = True
     }
     { tTextBox7 TextBox
-      MoveScaled(31,12,12,3)
+      MoveScaled(31,13,12,4)
       ReadOnly = True
     }
     { tTextBox8 TextBox
-      MoveScaled(45,12,12,3)
+      MoveScaled(45,13,12,4)
       ReadOnly = True
     }
     { tTextBox9 TextBox
-      MoveScaled(3,17,12,3)
+      MoveScaled(3,19,12,4)
       ReadOnly = True
     }
     { tTextBox10 TextBox
-      MoveScaled(17,17,12,3)
+      MoveScaled(17,19,12,4)
       ReadOnly = True
     }
     { tTextBox2 TextBox
-      MoveScaled(17,7,12,3)
+      MoveScaled(17,7,12,4)
       ReadOnly = True
     }
     { tTextBox11 TextBox
-      MoveScaled(31,17,12,3)
+      MoveScaled(31,19,12,4)
       ReadOnly = True
     }
     { tTextBox12 TextBox
-      MoveScaled(45,17,12,3)
+      MoveScaled(45,19,12,4)
       ReadOnly = True
     }
     { Label9 Label

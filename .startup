@@ -19,7 +19,6 @@ gb.settings
 gb.form.print
 gb.term
 gb.form.terminal
-gb.logging
 gb.net
 westwood.sharedmem
 

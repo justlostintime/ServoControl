@@ -83,7 +83,7 @@ Private CurrentSrv As Servo
 
 Private IoTimerLastTX As Float = 0.0
 Private IoTimerLastRX As Float = 0.0
-Private IoTrace As Boolean = False
+Public IoTrace As Boolean = False
 Private MyServos As Servo[] = New Servo[]
 Private MyPollTimer As Timer = New Timer As "MyRTimer"
 Private MyTextBoxes As TextBox[] = [tTextBox1, tTextBox2, tTextBox3, tTextBox4, tTextBox5, tTextBox6, tTextBox7, tTextBox8, tTextBox9, tTextBox10, tTextBox1, tTextBox11, tTextBox12]
@@ -92,11 +92,10 @@ Public Sub MyRTimer_timer() ' Every tick update the servo displayed position
 
   Dim InServed As Servo
   Dim Cnt As Integer = 0
-  Dim a As String
 
   MyPollTimer.Enabled = False
   For Each inServed In MyServos
-    If InServed.ServoId = 254 Then Continue ' skip the broadcast id
+    If InServed.ServoId = ServoManager.BroadcastAddress Then Continue ' skip the broadcast id
     MyTextBoxes[cnt].text = Right("0" & Str(inServed.ServoId), 2) & "=" & Format(inServed.ServoPos, "###0")
     Inc cnt
     Wait
@@ -119,7 +118,6 @@ Public Sub Form_Open()
   ServoAssignmentPanel.enabled = False
   FindAllIoPorts()
   MyPollTimer.delay = 300
-  IoTrace = IoTraceOnOff.value
 
   MyTextBoxes = [tTextBox1, tTextBox2, tTextBox3, tTextBox4, tTextBox5, tTextBox6, tTextBox7, tTextBox8, tTextBox9, tTextBox10, tTextBox11, tTextBox12]
 
@@ -129,6 +127,9 @@ Public Sub StartServos_Click()
 
   Dim Alist As String[] = New String[]
 
+  StopAllServosNow.Enabled = True
+  StartServos.enabled = False
+
   For i As Integer = 0 To IoPortList.count - 1
     If IoPortList[i].Selected Then
       Alist.Add(IoPortList[i].text)
@@ -137,16 +138,18 @@ Public Sub StartServos_Click()
 
   SrvManager = New ServoManager(AList) As "MyServos"
 
-  SrvManager.IoTraceSet(IoTraceOnOff.value)
+  IoTraceOnOff_Click()
 
   CurrentSrv = SrvManager.OpenServo(0, True)
   CurrentServo.Add(Str(0))
   CurrentServo.index = 0
   AccessServoPanel.Enabled = True
   ListServos.Enabled = True
-  StopAllServosNow.Enabled = True
+
   ServoAssignmentPanel.enabled = True
-  StartServos.enabled = False
+
+  MovingServo.enabled = True
+  AngleOffset.enabled = True
 
 End
 
@@ -186,7 +189,7 @@ Public Sub MyServos_Notice(msg As Integer, id As Byte, Buffer As Byte[], RxTime 
 
   Select Case msg
     Case SrvManager.NewServo ' we need to update the servo drop down list another servo was found
-      If IoTrace Then Print Now, "Servo message recieved", msg, id, Str(buffer), RxTime
+      If IoTrace Then Debug Now, "Servo message recieved", msg, id, Str(buffer), RxTime
       CurrentServo.Add(Right("0" & Str(id), 2))
       MyPollTimer.Enabled = False
       MyServos = SrvManager.GetServoCollection()
@@ -270,7 +273,7 @@ Public Sub DoAssign_Click()
   OutPutCmd[2] = Val(ServoAssignFrom.text)
   OutPutCmd[5] = Val(ServoAssignTo.text)
   If Message("Are you sure you want to Change the Servo ID of " & ServoAssignFrom.text & " To " & ServoAssignTo.text) Then
-    SrvManager.SendCommandRaw(OutPutCmd)
+    SrvManager.SendCommandRaw(0, OutPutCmd)
     Message("Value changed")
   Endif
 
@@ -281,11 +284,13 @@ Public Sub ListServos_Click()
   Dim srv As Servo
 
   If IoTrace Then ReadOut.text &= "Begin Enumeration of Servos\n"
+
   CurrentServo.Clear()
   For i As Byte = 0 To ServoManager.MaxServos - 1
     srv = SrvManager.OpenServo(i, False)
     If Not IsNull(srv) Then
       If IoTrace Then ReadOut.text &= "<- Servo Number " & i & " Is Active \n"
+
       CurrentServo.Add(Str(i))
       srv.CloseServo()
     Endif
@@ -343,7 +348,7 @@ End
 
 Public Sub HomeServo_Click()
 
-  If CurrentSrv.ServoId = 254 Then
+  If CurrentSrv.ServoId = ServoManager.BroadcastAddress Then
     SrvManager.HomeServos()
   Else
     CurrentSrv.HomeServo()
@@ -497,7 +502,7 @@ End
 
 Public Sub SetHomePosition_Click()
 
-  If CurrentSrv.ServoId = 254 Then
+  If CurrentSrv.ServoId = ServoManager.BroadcastAddress Then
 
     SrvManager.HomeServos()
 
@@ -505,22 +510,6 @@ Public Sub SetHomePosition_Click()
 
     CurrentSrv.HomePositionSet(CurrentSrv.ServoPos)       'Set(CFloat(CurrentAngle.text) / 0.24)
 
-  Endif
-
-End
-
-Public Sub Logger(msghdr As String, BufferHdr As String, buffer As Byte[], Optional ID As Integer = -1)
-
-  Dim inByte As Byte
-  Dim inData As String
-
-  If IoTrace Then
-    If Not (msghdr = "") Then Print Subst(Msghdr, id) & "\n"
-    inData = Now & "-" & BufferHdr
-    For Each inByte In buffer
-      inData &= (Str$(inByte) & " ")
-    Next
-    Print inData & "\n"
   Endif
 
 End
@@ -535,7 +524,7 @@ Public Sub SetZeroPosition_Click()
 
   Dim xx As Servo
 
-  If CurrentSrv.ServoId = 254 Then
+  If CurrentSrv.ServoId = ServoManager.BroadcastAddress Then
     For Each xx In MyServos
       xx.ZeroPointOffset = Val(SetZeroPosition.text)
     Next

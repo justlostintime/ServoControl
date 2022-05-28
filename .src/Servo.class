@@ -13,7 +13,7 @@ Public ServoPos As Integer    '  The last position the servo was at
 Public ServoState As Integer  ' the Current status or state of this servo 0=ready for command, 1 = waiting for reply, 2 = waiting to reach position
 Public IoMgr As IoManager     ' the iomanager for servos
 Public LastError As Byte      ' The last error from the led error blinky
-Private Polling As Timer = New Timer As "MyTimer"
+Private Polling As Timer = New Timer As "PollingTimer"
 
 Public HomePosition As Integer = 500 ' This is the software controlled home position 0-100 or 0-240 degrees
 
@@ -133,10 +133,11 @@ Public SERVO_LED_ERROR_WRITE_DATA As Byte[] = [85, 85, 0, 4, 35, 0, 0]
 Public SERVO_LED_ERROR_READ_DATA As Byte[] = [85, 85, 0, 3, 36, 0]
 Public SERVO_LED_ERROR_READ_MSG As Byte[] = [85, 85, 0, 4, 36, 0, 0]
 
-Public Sub mytimer_Timer()
+Public Sub PollingTimer_Timer()
 
   SERVO_POS_READ()
-  If IoTrace Then Print "Servo being polled index =", IoPortIndex, " ID = ", ServoId
+
+  If IoTrace Then Debug "Servo being polled index =", IoPortIndex, " ID = ", ServoId
 
 End
 
@@ -165,7 +166,7 @@ Public Sub BeginPolling()
     Print Now, "Begin Polling ID = ", ServoId
   Endif
   Polling.Delay = PollingTime      ' lets start polling this device
-  If Not (ServoId = 254) Then Polling.Enabled = True
+  If Not (ServoId = ServoManager.BroadcastAddress) Then Polling.Enabled = True
 
 End
 
@@ -173,7 +174,7 @@ Public Sub receivedMessage(theMessage As Byte[], RxTime As Float, TxTime As Floa
 
   IoTimeLastRx = Timer
 
-  IoMgr.Logger(("RxTime=" & RxTime & ",TxTime=" & TxTime), "<-Rx Servo(" & ServoId & ")>", theMessage, ServoID)
+  Logger(("RxTime=" & RxTime & ",TxTime=" & TxTime), "<-Rx Servo(" & ServoId & ")>", theMessage, ServoID)
 
   If TheMessage[CmdOffset] = 28 Then ServoPos = GetIntParm1(TheMessage)
 
@@ -190,7 +191,7 @@ Sub SendCommand(TheCmd As Byte[], Optional WaitReply As Boolean = False, TimeOut
   IoTimeLastTx = Timer
   TheCmd[2] = ServoId
 
-  IoMgr.Logger("", Str("-> Tx Servo(" & ServoId & ")>"), TheCmd, ServoId)
+  Logger("", Str("-> Tx Servo(" & ServoId & ")>"), TheCmd, ServoId)
 
   IoMgr.SendCommand(IoPortIndex, TheCmd, WaitReply, Timeout)
 
