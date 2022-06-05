@@ -1,5 +1,5 @@
 # Gambas Project File 3.0
-Title=LX-16A Bus servo programming and management
+Title=LX-16A/LX-224 Bus servo programming and management
 Startup=FMain
 Version=0.1.6
 Component=gb.image
@@ -20,7 +20,7 @@ Component=gb.form.terminal
 Component=gb.net
 Component=westwood.sharedmem
 Description="This Software will allow the user to manage test and program Lobot LX-16A and LX-15D servos thru the Lobot Buslinker version 2.2.\n\nThis is a very specialized usage senerio. These servos are normally used for robot or automation control.\n\nFixed some bugs added event for notice handler.\n\nMore Bugs Fixed Change how messages are dispatched. Unfortunately it made min message Tx to Rx time 4 ms  the actual bus speed is 3 ms for servo request to response.\nLooks like max servo per BusLinker is about 4 for good respose times, ie. 10 position checks and updates per second * 4 servos per cycle or 20 servos or so."
-Authors="Brian G  brian@westwoodsvcs.com"
+Authors="Justlostintime\n\nhttps://github.com/justlostintime/ServoControl"
 TabSize=2
 Language=en_US
 Vendor=WESTWOOD
