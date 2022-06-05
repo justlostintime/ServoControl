@@ -106,19 +106,19 @@
     Text = ("Delete")
   }
   { ShoulderOffset TextBox
-    MoveScaled(115,39,12,4)
+    MoveScaled(115,39,14,4)
     Alignment = Align.Right
   }
   { UpperLegOffset TextBox
-    MoveScaled(115,50,12,4)
+    MoveScaled(115,50,14,4)
     Alignment = Align.Right
   }
   { LowerLegOffset TextBox
-    MoveScaled(115,59,12,4)
+    MoveScaled(115,59,14,4)
     Alignment = Align.Right
   }
   { HorizontalPosition TextBox
-    MoveScaled(115,71,12,4)
+    MoveScaled(115,71,14,4)
     Alignment = Align.Right
   }
   { VerticalPosition TextBox
@@ -136,21 +136,24 @@
       Text = ("Define Leg Segment \nLengths in Milimeters")
     }
     { Label11 Label
-      MoveScaled(27,0,9,5)
+      MoveScaled(26,0,10,5)
+      Alignment = Align.Right
       Text = ("Upper")
     }
     { UpperLength TextBox
       MoveScaled(37,0,14,5)
     }
     { Label12 Label
-      MoveScaled(27,5,8,5)
+      MoveScaled(24,5,11,5)
+      Alignment = Align.Right
       Text = ("Lower")
     }
     { LowerLength TextBox
       MoveScaled(37,6,14,5)
     }
     { Label13 Label
-      MoveScaled(56,6,14,5)
+      MoveScaled(54,6,14,5)
+      Alignment = Align.Right
       Text = ("Max Height")
     }
     { MaxHeight TextBox
@@ -158,14 +161,16 @@
       ReadOnly = True
     }
     { Label14 Label
-      MoveScaled(56,0,12,5)
+      MoveScaled(54,0,14,5)
+      Alignment = Align.Right
       Text = ("Min Height")
     }
     { MinHeight TextBox
       MoveScaled(69,0,14,5)
     }
     { Label15 Label
-      MoveScaled(84,0,19,5)
+      MoveScaled(87,0,16,5)
+      Alignment = Align.Right
       Text = ("Knee To Ground")
     }
     { KneeToGround TextBox
@@ -173,7 +178,8 @@
       ReadOnly = True
     }
     { Label16 Label
-      MoveScaled(84,7,19,4)
+      MoveScaled(86,7,17,4)
+      Alignment = Align.Right
       Text = ("Shoulder To Ground")
     }
     { ShoulderToGround TextBox
