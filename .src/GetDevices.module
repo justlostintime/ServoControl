@@ -9,8 +9,12 @@ Public Sub GetDeviceServo() As String[]
   Shell "ls /dev/ttyUSB*" To result
   USBResult = Split(result, "\n", "", True)
   For Each result In USBResult
-    parm = "udevadm info --name=" & result & " | grep HL-340"
+    parm = "udevadm info --name=" & result & " | grep HL-340"      ' older systems use this
     Shell parm To r2
+    If r2 = "" Then
+      parm = "udevadm info --name=" & result & " | grep CH340"     ' Newer system use this
+      Shell parm To r2
+    Endif
     If r2 <> "" Then USBList.Add(result)
   Next
 
@@ -18,17 +22,24 @@ Public Sub GetDeviceServo() As String[]
 
 End
 
+'' This access the usb to i2c interface, it supports rs232 or i2c
 Public Sub GetDeviceSR04() As String[] ' sr04 is attached to a pi zwero w by rs232 over usb
 
   Dim USBList As String[] = New String[]
   Dim USBResult As String[]
   Dim result, r2, parm As String
 
-  Shell "ls /dev/ttyACM*" To result
+  Shell "ls /dev/ttyACM*" To result               ' older system used this device
   USBResult = Split(result, "\n", "", True)
+  If result = "" Then
+    Shell "ls /dev/ttyUSB*" To result             ' Newer system now use this device
+  Endif
   For Each result In USBResult
-    parm = "udevadm info --name=" & result & " | grep \"Linux-USB Serial Gadget (CDC ACM mode)\""
+    parm = "udevadm info --name=" & result & " | grep \"Linux-USB Serial Gadget (CDC ACM mode)\"" ' older system called it this
     Shell parm To r2
+    If r2 = "" Then
+      parm = "udevadm info --name=" & result & " | grep FT232H"                                  ' new systems now know its name
+    Endif
     If r2 <> "" Then USBList.Add(result)
   Next
 
